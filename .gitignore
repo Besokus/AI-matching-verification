@@ -29,10 +29,11 @@ log/
 *.log
 
 # Data files (too large for git)
-data/
+/data/
 *.csv
 *.txt
 !docs/*.md
+!requirements.txt
 
 # OS
 .DS_Store

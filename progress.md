@@ -19,11 +19,19 @@
   - `progress.md` (created)
 
 ### Phase T0: Tick 合成器
-- **Status:** pending
+- **Status:** in_progress
+- **Started:** 2026-06-22
 - Actions taken:
-  -
+  - T0.1: 创建 AKShare 数据 Provider，支持分钟线和日线获取
+  - T0.1: 实现 SQLite 本地缓存机制
+  - T0.1: 创建市场数据模型（KLine, DailyKLine, TickEvent, MarketSnapshot）
+  - T0.1: 编写单元测试
 - Files created/modified:
-  -
+  - `agent/data/models/market.py` (created)
+  - `agent/data/providers/akshare_provider.py` (created)
+  - `agent/tests/test_data/test_akshare_provider.py` (created)
+  - `agent/requirements.txt` (created)
+  - `.gitignore` (modified)
 
 ### Phase T1: gRPC 通信层
 - **Status:** pending

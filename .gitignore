@@ -1,0 +1,58 @@
+# Build artifacts
+build/
+build-replay/
+cmake-build-*/
+dist/
+*.o
+*.so
+*.dll
+*.exe
+*.a
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Logs
+log/
+*.log
+
+# Data files (too large for git)
+data/
+*.csv
+*.txt
+!docs/*.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+config/config.json
+.env
+
+# RTAuction build artifacts
+RTAuction/build/
+RTAuction/build-replay/
+RTAuction/log/
+
+# SQLite
+*.db
+*.sqlite
+
+# Node
+node_modules/
+
+# Docker
+.docker/

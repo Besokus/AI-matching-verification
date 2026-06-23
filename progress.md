@@ -61,11 +61,31 @@
   - `agent/tests/test_bridge/test_engine_client.py` (created)
 
 ### Phase T2: Agent 框架
-- **Status:** pending
+- **Status:** complete
+- **Started:** 2026-06-22
+- **Completed:** 2026-06-22
 - Actions taken:
-  -
+  - T2.1: 创建 AgentState, DebateState, OrderDecision, RiskDecision 状态定义
+  - T2.1: 实现 TradingGraph 主编排图
+  - T2.2: 创建 BaseAgent 基类（支持 LLM 调用）
+  - T2.2: 实现 TechnicalAnalystAgent（MACD/RSI/KDJ/布林带）
+  - T2.2: 实现 FundamentalAnalystAgent（Phase 1 简化）
+  - T2.2: 实现 SentimentAnalystAgent（Phase 1 简化）
+  - T2.2: 实现 NewsAnalystAgent（Phase 1 简化）
+  - T2.3: 实现 TraderAgent（规则 + LLM 双模式）
+  - T2.4: 实现 9 条风控规则（Layer 1 + Layer 2）
+  - T2.4: 实现 RiskEngine 确定性风控引擎
+  - T2.4: 编写风控引擎单元测试
 - Files created/modified:
-  -
+  - `agent/graph/state.py` (created)
+  - `agent/graph/trading_graph.py` (created)
+  - `agent/agents/base.py` (created)
+  - `agent/agents/analyst.py` (created)
+  - `agent/agents/trader.py` (created)
+  - `agent/risk/rules.py` (created)
+  - `agent/risk/engine.py` (created)
+  - `agent/config.py` (created)
+  - `agent/tests/test_risk/test_risk_engine.py` (created)
 
 ### Phase T3: 撮合引擎集成
 - **Status:** pending

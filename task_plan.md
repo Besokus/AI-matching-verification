@@ -28,50 +28,49 @@ AKShare 分钟线 → TickSynthesizer → 合成逐笔事件 → gRPC → C++ �
 
 ---
 
-## Phase T0: Tick 合成器 (3天)
+## Phase T0: Tick 合成器 (3天) ✅
 
-### T0.1: AKShare 分钟线数据接入 (0.5天)
-- [ ] 创建 `agent/data/providers/akshare_provider.py`
-- [ ] 实现 `get_minute_klines(security_id, start_date, end_date) -> list[KLine]`
-- [ ] 实现 `get_daily_klines(security_id, start_date, end_date) -> list[KLine]`
-- [ ] 创建 `agent/data/models/market.py` 定义 KLine 数据模型
-- [ ] 实现本地 SQLite 缓存（避免重复请求）
-- [ ] **验收标准**: `pytest tests/test_data/test_akshare_provider.py` 通过，能获取 600519 近 5 天分钟线
+### T0.1: AKShare 分钟线数据接入 (0.5天) ✅
+- [x] 创建 `agent/data/providers/akshare_provider.py`
+- [x] 实现 `get_minute_klines(security_id, start_date, end_date) -> list[KLine]`
+- [x] 实现 `get_daily_klines(security_id, start_date, end_date) -> list[KLine]`
+- [x] 创建 `agent/data/models/market.py` 定义 KLine 数据模型
+- [x] 实现本地 SQLite 缓存（避免重复请求）
+- [x] **验收标准**: `pytest tests/test_data/test_akshare_provider.py` 通过，能获取 600519 近 5 天分钟线
 
-### T0.2: 价格路径生成算法 (1天)
-- [ ] 创建 `agent/synthesizer/price_path.py`
-- [ ] 实现布朗运动价格路径生成
-- [ ] 约束路径必须经过 Open → High/Low → Close
-- [ ] 创建 `agent/synthesizer/tick_synthesizer.py` 主类
-- [ ] **验收标准**: 给定 OHLCV 输入，生成的价格序列满足：首价=Open, 尾价=Close, 最高价=High, 最低价=Low
+### T0.2: 价格路径生成算法 (1天) ✅
+- [x] 创建 `agent/synthesizer/price_path.py`
+- [x] 实现布朗运动价格路径生成
+- [x] 约束路径必须经过 Open → High/Low → Close
+- [x] 创建 `agent/synthesizer/tick_synthesizer.py` 主类
+- [x] **验收标准**: 给定 OHLCV 输入，生成的价格序列满足：首价=Open, 尾价=Close, 最高价=High, 最低价=Low
 
-### T0.3: 订单/成交事件生成 (1天)
-- [ ] 创建 `agent/synthesizer/order_generator.py`
-- [ ] 实现订单到达模型（泊松过程）
-- [ ] 实现方向判断（上涨→买多卖少，下跌相反）
-- [ ] 实现撤单事件生成（随机撤单比例）
-- [ ] 输出格式对齐 RTAuction OrderData/TradeData
-- [ ] **验收标准**: 生成的事件序列格式与 RTAuction types.h 中 OrderData/TradeData 一致
+### T0.3: 订单/成交事件生成 (1天) ✅
+- [x] 实现订单到达模型（泊松过程）
+- [x] 实现方向判断（上涨→买多卖少，下跌相反）
+- [x] 实现撤单事件生成（随机撤单比例）
+- [x] 输出格式对齐 RTAuction OrderData/TradeData
+- [x] **验收标准**: 生成的事件序列格式与 RTAuction types.h 中 OrderData/TradeData 一致
 
-### T0.4: 合成质量验证 (0.5天)
-- [ ] 创建 `agent/synthesizer/validator.py`
-- [ ] 实现 OHLCV 一致性校验（合成 tick → 引擎回放 → 对比原始 K 线）
-- [ ] 实现成交量守恒校验
-- [ ] 创建 `tests/test_synthesizer/` 测试套件
-- [ ] **验收标准**: 合成 tick 经引擎回放后产生的 K 线与原始分钟 K 线 OHLCV 误差 < 0.1%
+### T0.4: 合成质量验证 (0.5天) ✅
+- [x] 创建 `agent/synthesizer/validator.py`
+- [x] 实现 OHLCV 一致性校验（合成 tick → 引擎回放 → 对比原始 K 线）
+- [x] 实现成交量守恒校验
+- [x] 创建 `tests/test_synthesizer/` 测试套件
+- [x] **验收标准**: 合成 tick 经引擎回放后产生的 K 线与原始分钟 K 线 OHLCV 误差 < 0.1%
 
 **依赖**: 无
 **输出**: `agent/synthesizer/` 模块，可独立运行并输出合成 tick 事件文件
 
 ---
 
-## Phase T1: gRPC 通信层 (3天)
+## Phase T1: gRPC 通信层 (3天) ✅
 
-### T1.1: 定义 .proto 文件 (0.5天)
-- [ ] 创建 `agent/bridge/proto/matching_engine.proto`
-- [ ] 定义 MatchingEngineService（FeedOrderEvent, FeedTradeEvent, SubmitAgentOrder, CancelAgentOrder, GetMarketSnapshot, GetAgentTrades, WaitForDrain, GetEngineStatus）
-- [ ] 定义消息类型（OrderEvent, TradeEvent, AgentOrder, MarketSnapshotProto, PriceLevel）
-- [ ] **验收标准**: `protoc --python_out=. matching_engine.proto` 编译通过
+### T1.1: 定义 .proto 文件 (0.5天) ✅
+- [x] 创建 `agent/bridge/proto/matching_engine.proto`
+- [x] 定义 MatchingEngineService（FeedOrderEvent, FeedTradeEvent, SubmitAgentOrder, CancelAgentOrder, GetMarketSnapshot, GetAgentTrades, WaitForDrain, GetEngineStatus）
+- [x] 定义消息类型（OrderEvent, TradeEvent, AgentOrder, MarketSnapshotProto, PriceLevel）
+- [x] **验收标准**: `protoc --python_out=. matching_engine.proto` 编译通过
 
 ### T1.2: C++ 侧 gRPC server 实现 (1.5天)
 - [ ] 在 RTAuction 中创建 `src/grpc/` 目录
@@ -82,49 +81,49 @@ AKShare 分钟线 → TickSynthesizer → 合成逐笔事件 → gRPC → C++ �
 - [ ] 更新 CMakeLists.txt 添加 gRPC 依赖
 - [ ] **验收标准**: gRPC server 启动成功，grpcurl 能调通所有接口
 
-### T1.3: Python 侧 gRPC client 封装 (1天)
-- [ ] 创建 `agent/bridge/engine_client.py`
-- [ ] 实现 EngineClient 类，封装所有 gRPC 调用
-- [ ] 实现 `feed_order_event()`, `submit_agent_order()`, `get_snapshot()`, `wait_drain()`
-- [ ] 创建 `tests/test_bridge/` 测试套件
-- [ ] **验收标准**: Python 能通过 gRPC 调用 C++ 引擎的全部 API，单元测试通过
+### T1.3: Python 侧 gRPC client 封装 (1天) ✅
+- [x] 创建 `agent/bridge/engine_client.py`
+- [x] 实现 EngineClient 类，封装所有 gRPC 调用
+- [x] 实现 `feed_order_event()`, `submit_agent_order()`, `get_snapshot()`, `wait_drain()`
+- [x] 创建 `tests/test_bridge/` 测试套件
+- [x] **验收标准**: Python 能通过 gRPC 调用 C++ 引擎的全部 API，单元测试通过
 
 **依赖**: 无（与 T0 并行）
 **输出**: `agent/bridge/` 模块 + RTAuction gRPC server
 
 ---
 
-## Phase T2: Agent 框架 (3天)
+## Phase T2: Agent 框架 (3天) ✅
 
-### T2.1: LangGraph StateGraph 定义 (1天)
-- [ ] 创建 `agent/graph/state.py` 定义 AgentState, DebateState, OrderDecision, RiskDecision
-- [ ] 创建 `agent/graph/trading_graph.py` 实现 TradingGraph 类
-- [ ] 定义图拓扑：分析师(并行) → 研究员(辩论) → 交易员 → 风控
-- [ ] 实现条件路由：辩论轮次控制、风控决策路由
-- [ ] 创建 `agent/config.py` 全局配置
-- [ ] **验收标准**: `graph.graph.compile()` 成功，无语法/拓扑错误
+### T2.1: LangGraph StateGraph 定义 (1天) ✅
+- [x] 创建 `agent/graph/state.py` 定义 AgentState, DebateState, OrderDecision, RiskDecision
+- [x] 创建 `agent/graph/trading_graph.py` 实现 TradingGraph 类
+- [x] 定义图拓扑：分析师(并行) → 研究员(辩论) → 交易员 → 风控
+- [x] 实现条件路由：辩论轮次控制、风控决策路由
+- [x] 创建 `agent/config.py` 全局配置
+- [x] **验收标准**: `graph.graph.compile()` 成功，无语法/拓扑错误
 
-### T2.2: 技术面分析师 Agent (1天)
-- [ ] 创建 `agent/agents/base.py` BaseAgent 基类
-- [ ] 创建 `agent/agents/analyst.py` TechnicalAnalystAgent
-- [ ] 实现 MACD/RSI/KDJ/布林带技术指标计算（使用 ta-lib 或手动实现）
-- [ ] 创建 `agent/llm/` LLM 客户端层（DeepSeek/Qwen 适配）
-- [ ] 创建 `agent/llm/prompts/analyst_prompts.py` Prompt 模板
-- [ ] **验收标准**: 给定 MarketSnapshot，TechnicalAnalystAgent 能输出 TechnicalReport
+### T2.2: 技术面分析师 Agent (1天) ✅
+- [x] 创建 `agent/agents/base.py` BaseAgent 基类
+- [x] 创建 `agent/agents/analyst.py` TechnicalAnalystAgent
+- [x] 实现 MACD/RSI/KDJ/布林带技术指标计算（使用 ta-lib 或手动实现）
+- [x] 创建 `agent/llm/` LLM 客户端层（DeepSeek/Qwen 适配）
+- [x] 创建 `agent/llm/prompts/analyst_prompts.py` Prompt 模板
+- [x] **验收标准**: 给定 MarketSnapshot，TechnicalAnalystAgent 能输出 TechnicalReport
 
-### T2.3: 交易员 Agent (0.5天)
-- [ ] 创建 `agent/agents/trader.py` TraderAgent
-- [ ] 实现综合分析师报告 + 辩论结论 → OrderDecision
-- [ ] 创建 `agent/llm/prompts/trader_prompts.py`
-- [ ] **验收标准**: 给定分析师报告和辩论结论，TraderAgent 能输出结构化 OrderDecision
+### T2.3: 交易员 Agent (0.5天) ✅
+- [x] 创建 `agent/agents/trader.py` TraderAgent
+- [x] 实现综合分析师报告 + 辩论结论 → OrderDecision
+- [x] 创建 `agent/llm/prompts/trader_prompts.py`
+- [x] **验收标准**: 给定分析师报告和辩论结论，TraderAgent 能输出结构化 OrderDecision
 
-### T2.4: 风控 Agent - 规则引擎 (0.5天)
-- [ ] 创建 `agent/risk/rules.py` 定义风控规则
-- [ ] 创建 `agent/risk/engine.py` RiskEngine 规则引擎
-- [ ] 实现 Layer 1: Agent 规则（仓位、集中度、涨跌停、频率）
-- [ ] 实现 Layer 2: 系统熔断（日亏损、连续亏损、置信度）
-- [ ] 创建 `tests/test_risk/` 测试套件
-- [ ] **验收标准**: 测试用例覆盖所有风控规则，违规订单被正确拦截
+### T2.4: 风控 Agent - 规则引擎 (0.5天) ✅
+- [x] 创建 `agent/risk/rules.py` 定义风控规则
+- [x] 创建 `agent/risk/engine.py` RiskEngine 规则引擎
+- [x] 实现 Layer 1: Agent 规则（仓位、集中度、涨跌停、频率）
+- [x] 实现 Layer 2: 系统熔断（日亏损、连续亏损、置信度）
+- [x] 创建 `tests/test_risk/` 测试套件
+- [x] **验收标准**: 测试用例覆盖所有风控规则，违规订单被正确拦截
 
 **依赖**: 无（与 T0, T1 并行）
 **输出**: `agent/graph/`, `agent/agents/`, `agent/risk/`, `agent/llm/` 模块

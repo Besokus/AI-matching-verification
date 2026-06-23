@@ -419,6 +419,35 @@ def check_t4() -> list[CheckResult]:
     return results
 
 
+def check_t5() -> list[CheckResult]:
+    """T5: 端到端集成测试"""
+    results = []
+
+    test_file = project_root / "agent/tests/test_integration/test_e2e_backtest.py"
+    results.append(CheckResult(
+        task="T5",
+        check="端到端测试文件存在",
+        passed=test_file.exists(),
+        message="" if test_file.exists() else "缺少 test_e2e_backtest.py",
+    ))
+
+    if test_file.exists():
+        content = test_file.read_text(encoding="utf-8")
+        has_tick_test = "TestTickSynthesis" in content
+        has_agent_test = "TestAgentDecision" in content
+        has_risk_test = "TestRiskControl" in content
+        has_perf_test = "TestPerformanceCalculation" in content
+        has_pipeline_test = "TestEndToEndPipeline" in content
+        results.append(CheckResult(
+            task="T5",
+            check="测试覆盖完整管道",
+            passed=has_tick_test and has_agent_test and has_risk_test and has_perf_test and has_pipeline_test,
+            message=f"tick={has_tick_test}, agent={has_agent_test}, risk={has_risk_test}, perf={has_perf_test}, pipeline={has_pipeline_test}",
+        ))
+
+    return results
+
+
 def run_all_checks() -> list[CheckResult]:
     """运行所有检查"""
     all_results = []
@@ -432,6 +461,7 @@ def run_all_checks() -> list[CheckResult]:
     all_results.extend(check_t2_4())
     all_results.extend(check_t3())
     all_results.extend(check_t4())
+    all_results.extend(check_t5())
     return all_results
 
 

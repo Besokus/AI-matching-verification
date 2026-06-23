@@ -341,6 +341,84 @@ def check_t2_4() -> list[CheckResult]:
     return results
 
 
+def check_t3() -> list[CheckResult]:
+    """T3: 撮合引擎集成"""
+    results = []
+
+    files = ["agent/main.py"]
+    for f in files:
+        path = project_root / f
+        results.append(CheckResult(
+            task="T3",
+            check=f"文件 {f} 存在",
+            passed=path.exists(),
+            message="" if path.exists() else f"缺少文件: {f}",
+        ))
+
+    try:
+        from agent.main import BacktestRunner
+        has_run = hasattr(BacktestRunner, "run")
+        has_replay = hasattr(BacktestRunner, "_run_replay")
+        has_simulation = hasattr(BacktestRunner, "_run_simulation")
+        results.append(CheckResult(
+            task="T3",
+            check="BacktestRunner 接口完整",
+            passed=has_run and has_replay and has_simulation,
+            message=f"run={has_run}, _run_replay={has_replay}, _run_simulation={has_simulation}",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T3",
+            check="BacktestRunner 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    return results
+
+
+def check_t4() -> list[CheckResult]:
+    """T4: 绩效统计"""
+    results = []
+
+    files = [
+        "agent/performance/calculator.py",
+        "agent/performance/collector.py",
+        "agent/performance/reporter.py",
+    ]
+    for f in files:
+        path = project_root / f
+        results.append(CheckResult(
+            task="T4",
+            check=f"文件 {f} 存在",
+            passed=path.exists(),
+            message="" if path.exists() else f"缺少文件: {f}",
+        ))
+
+    try:
+        from agent.performance.calculator import PerformanceCalculator
+        from agent.performance.reporter import PerformanceReporter
+        calc = PerformanceCalculator()
+        has_calculate = hasattr(calc, "calculate")
+        has_sharpe = hasattr(calc, "_calculate_sharpe")
+        has_drawdown = hasattr(calc, "_calculate_max_drawdown")
+        results.append(CheckResult(
+            task="T4",
+            check="PerformanceCalculator 接口完整",
+            passed=has_calculate and has_sharpe and has_drawdown,
+            message=f"calculate={has_calculate}, sharpe={has_sharpe}, drawdown={has_drawdown}",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T4",
+            check="PerformanceCalculator 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    return results
+
+
 def run_all_checks() -> list[CheckResult]:
     """运行所有检查"""
     all_results = []
@@ -352,6 +430,8 @@ def run_all_checks() -> list[CheckResult]:
     all_results.extend(check_t2_1())
     all_results.extend(check_t2_2())
     all_results.extend(check_t2_4())
+    all_results.extend(check_t3())
+    all_results.extend(check_t4())
     return all_results
 
 

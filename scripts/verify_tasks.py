@@ -448,167 +448,80 @@ def check_t5() -> list[CheckResult]:
     return results
 
 
-def check_t6() -> list[CheckResult]:
-    """T6: 基本面分析师 Agent"""
+def _check_analyst_task(
+    task_id: str,
+    provider_method: str,
+    provider_label: str,
+    agent_class_name: str,
+    test_file_name: str,
+) -> list[CheckResult]:
+    """通用分析师任务检查"""
     results = []
 
-    # 检查 AKShareProvider 有财务数据接口
+    # 检查 AKShareProvider 接口
     try:
         from agent.data.providers.akshare_provider import AKShareProvider
         provider = AKShareProvider.__new__(AKShareProvider)
-        has_financial = hasattr(provider, "get_financial_indicator")
+        has_method = hasattr(provider, provider_method)
         results.append(CheckResult(
-            task="T6",
-            check="AKShareProvider 财务数据接口",
-            passed=has_financial,
-            message="get_financial_indicator 存在" if has_financial else "缺少 get_financial_indicator",
+            task=task_id,
+            check=f"AKShareProvider {provider_label}",
+            passed=has_method,
+            message=f"{provider_method} 存在" if has_method else f"缺少 {provider_method}",
         ))
     except Exception as e:
         results.append(CheckResult(
-            task="T6",
+            task=task_id,
             check="AKShareProvider 可导入",
             passed=False,
             message=str(e),
         ))
 
-    # 检查 FundamentalAnalystAgent 实现
+    # 检查 Agent 可导入
     try:
-        from agent.agents.analyst import FundamentalAnalystAgent
-        agent = FundamentalAnalystAgent.__new__(FundamentalAnalystAgent)
+        from agent.agents import analyst as analyst_mod
+        agent_cls = getattr(analyst_mod, agent_class_name)
+        agent = agent_cls.__new__(agent_cls)
         has_run = hasattr(agent, "run")
-        has_score_valuation = hasattr(agent, "_score_valuation") or hasattr(agent, "_analyze_with_rules")
         results.append(CheckResult(
-            task="T6",
-            check="FundamentalAnalystAgent 接口完整",
+            task=task_id,
+            check=f"{agent_class_name} 接口完整",
             passed=has_run,
             message=f"run={has_run}",
         ))
     except Exception as e:
         results.append(CheckResult(
-            task="T6",
-            check="FundamentalAnalystAgent 可导入",
+            task=task_id,
+            check=f"{agent_class_name} 可导入",
             passed=False,
             message=str(e),
         ))
 
     # 检查测试文件
-    test_file = project_root / "agent/tests/test_agents/test_fundamental_analyst.py"
+    test_file = project_root / f"agent/tests/test_agents/{test_file_name}"
     results.append(CheckResult(
-        task="T6",
+        task=task_id,
         check="测试文件存在",
         passed=test_file.exists(),
-        message="" if test_file.exists() else "缺少 test_fundamental_analyst.py",
+        message="" if test_file.exists() else f"缺少 {test_file_name}",
     ))
 
     return results
+
+
+def check_t6() -> list[CheckResult]:
+    """T6: 基本面分析师 Agent"""
+    return _check_analyst_task("T6", "get_financial_indicator", "财务数据接口", "FundamentalAnalystAgent", "test_fundamental_analyst.py")
 
 
 def check_t7() -> list[CheckResult]:
     """T7: 情绪面分析师 Agent"""
-    results = []
-
-    # 检查 AKShareProvider 有资金流向接口
-    try:
-        from agent.data.providers.akshare_provider import AKShareProvider
-        provider = AKShareProvider.__new__(AKShareProvider)
-        has_money_flow = hasattr(provider, "get_money_flow")
-        results.append(CheckResult(
-            task="T7",
-            check="AKShareProvider 资金流向接口",
-            passed=has_money_flow,
-            message="get_money_flow 存在" if has_money_flow else "缺少 get_money_flow",
-        ))
-    except Exception as e:
-        results.append(CheckResult(
-            task="T7",
-            check="AKShareProvider 可导入",
-            passed=False,
-            message=str(e),
-        ))
-
-    # 检查 SentimentAnalystAgent 实现
-    try:
-        from agent.agents.analyst import SentimentAnalystAgent
-        agent = SentimentAnalystAgent.__new__(SentimentAnalystAgent)
-        has_run = hasattr(agent, "run")
-        results.append(CheckResult(
-            task="T7",
-            check="SentimentAnalystAgent 接口完整",
-            passed=has_run,
-            message=f"run={has_run}",
-        ))
-    except Exception as e:
-        results.append(CheckResult(
-            task="T7",
-            check="SentimentAnalystAgent 可导入",
-            passed=False,
-            message=str(e),
-        ))
-
-    # 检查测试文件
-    test_file = project_root / "agent/tests/test_agents/test_sentiment_analyst.py"
-    results.append(CheckResult(
-        task="T7",
-        check="测试文件存在",
-        passed=test_file.exists(),
-        message="" if test_file.exists() else "缺少 test_sentiment_analyst.py",
-    ))
-
-    return results
+    return _check_analyst_task("T7", "get_money_flow", "资金流向接口", "SentimentAnalystAgent", "test_sentiment_analyst.py")
 
 
 def check_t8() -> list[CheckResult]:
     """T8: 新闻分析师 Agent"""
-    results = []
-
-    # 检查 AKShareProvider 有新闻接口
-    try:
-        from agent.data.providers.akshare_provider import AKShareProvider
-        provider = AKShareProvider.__new__(AKShareProvider)
-        has_news = hasattr(provider, "get_news")
-        results.append(CheckResult(
-            task="T8",
-            check="AKShareProvider 新闻接口",
-            passed=has_news,
-            message="get_news 存在" if has_news else "缺少 get_news",
-        ))
-    except Exception as e:
-        results.append(CheckResult(
-            task="T8",
-            check="AKShareProvider 可导入",
-            passed=False,
-            message=str(e),
-        ))
-
-    # 检查 NewsAnalystAgent 实现
-    try:
-        from agent.agents.analyst import NewsAnalystAgent
-        agent = NewsAnalystAgent.__new__(NewsAnalystAgent)
-        has_run = hasattr(agent, "run")
-        results.append(CheckResult(
-            task="T8",
-            check="NewsAnalystAgent 接口完整",
-            passed=has_run,
-            message=f"run={has_run}",
-        ))
-    except Exception as e:
-        results.append(CheckResult(
-            task="T8",
-            check="NewsAnalystAgent 可导入",
-            passed=False,
-            message=str(e),
-        ))
-
-    # 检查测试文件
-    test_file = project_root / "agent/tests/test_agents/test_news_analyst.py"
-    results.append(CheckResult(
-        task="T8",
-        check="测试文件存在",
-        passed=test_file.exists(),
-        message="" if test_file.exists() else "缺少 test_news_analyst.py",
-    ))
-
-    return results
+    return _check_analyst_task("T8", "get_news", "新闻接口", "NewsAnalystAgent", "test_news_analyst.py")
 
 
 def check_t9() -> list[CheckResult]:

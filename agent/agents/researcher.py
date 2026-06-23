@@ -150,7 +150,7 @@ class BullResearcher(BaseAgent):
 分析师报告:
 - 技术面: {technical.summary} (信号: {technical.signal}, 趋势: {technical.trend})
 - 基本面: {fundamental.summary} (估值: {fundamental.valuation}, 质量: {fundamental.quality})
-- 情绪面: {fundamental.summary} (资金: {sentiment.money_flow}, 机构: {sentiment.institutional_activity})
+- 情绪面: {sentiment.summary} (资金: {sentiment.money_flow}, 机构: {sentiment.institutional_activity})
 - 新闻: {news.summary} (情绪: {news.sentiment_score:.2f})
 
 {"看空论据: " + bear_argument if bear_argument else "（第一轮，无看空论据）"}
@@ -303,7 +303,7 @@ class BearResearcher(BaseAgent):
 分析师报告:
 - 技术面: {technical.summary} (信号: {technical.signal}, 趋势: {technical.trend})
 - 基本面: {fundamental.summary} (估值: {fundamental.valuation}, 质量: {fundamental.quality})
-- 情绪面: {fundamental.summary} (资金: {sentiment.money_flow}, 机构: {sentiment.institutional_activity})
+- 情绪面: {sentiment.summary} (资金: {sentiment.money_flow}, 机构: {sentiment.institutional_activity})
 - 新闻: {news.summary} (情绪: {news.sentiment_score:.2f})
 
 {"看多论据: " + bull_argument if bull_argument else "（第一轮，无看多论据）"}

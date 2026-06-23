@@ -11,6 +11,19 @@ import pandas as pd
 from ..models.market import KLine, DailyKLine
 
 
+_POSITIVE_KEYWORDS = frozenset([
+    "增持", "回购", "业绩预增", "中标", "获批", "签约", "合作",
+    "涨停", "大涨", "利好", "突破", "新高", "增长", "盈利",
+    "分红", "送股", "转增", "预增", "扭亏", "减亏",
+])
+
+_NEGATIVE_KEYWORDS = frozenset([
+    "减持", "质押", "业绩预减", "处罚", "诉讼", "违规", "暴跌",
+    "跌停", "利空", "亏损", "下滑", "下降", "风险", "警告",
+    "退市", "暂停", "终止", "立案", "调查", "罚款",
+])
+
+
 class AKShareProvider:
     """AKShare 数据 Provider，支持本地 SQLite 缓存"""
 
@@ -505,22 +518,11 @@ class AKShareProvider:
         Returns:
             情绪得分 -1.0 ~ 1.0
         """
-        positive_keywords = [
-            "增持", "回购", "业绩预增", "中标", "获批", "签约", "合作",
-            "涨停", "大涨", "利好", "突破", "新高", "增长", "盈利",
-            "分红", "送股", "转增", "预增", "扭亏", "减亏",
-        ]
-        negative_keywords = [
-            "减持", "质押", "业绩预减", "处罚", "诉讼", "违规", "暴跌",
-            "跌停", "利空", "亏损", "下滑", "下降", "风险", "警告",
-            "退市", "暂停", "终止", "立案", "调查", "罚款",
-        ]
-
         score = 0.0
-        for kw in positive_keywords:
+        for kw in _POSITIVE_KEYWORDS:
             if kw in text:
                 score += 0.3
-        for kw in negative_keywords:
+        for kw in _NEGATIVE_KEYWORDS:
             if kw in text:
                 score -= 0.3
 

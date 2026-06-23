@@ -289,7 +289,6 @@ class FundamentalAnalystAgent(BaseAgent):
     def _analyze_with_rules(self, security_id: str, data: dict) -> FundamentalReport:
         """使用规则进行基本面分析"""
         risk_factors = []
-        scores = {}
 
         # 估值维度
         pe = data.get("pe_ttm", data.get("pe", 0))
@@ -297,17 +296,13 @@ class FundamentalAnalystAgent(BaseAgent):
 
         if pe > 0:
             if pe < 15:
-                scores["valuation"] = 0.8  # 低估
                 valuation = "undervalued"
             elif pe < 30:
-                scores["valuation"] = 0.5  # 合理
                 valuation = "fair"
             else:
-                scores["valuation"] = 0.2  # 高估
                 valuation = "overvalued"
                 risk_factors.append(f"PE={pe:.1f} 偏高")
         else:
-            scores["valuation"] = 0.3
             valuation = "fair"
             if pe < 0:
                 risk_factors.append("PE 为负（亏损）")
@@ -320,55 +315,36 @@ class FundamentalAnalystAgent(BaseAgent):
         gross_margin = data.get("gross_margin", 0)
         debt_ratio = data.get("debt_ratio", 0)
 
-        quality_score = 0.5
         if roe >= 20:
-            quality_score += 0.2
             quality = "strong"
         elif roe >= 10:
-            quality_score += 0.1
             quality = "moderate"
         else:
             quality = "weak"
             if roe > 0:
                 risk_factors.append(f"ROE={roe:.1f}% 偏低")
 
-        if gross_margin > 30:
-            quality_score += 0.1
-        elif gross_margin < 10:
+        if gross_margin < 10:
             risk_factors.append(f"毛利率={gross_margin:.1f}% 过低")
 
         if debt_ratio > 70:
-            quality_score -= 0.2
             risk_factors.append(f"资产负债率={debt_ratio:.1f}% 过高")
-
-        scores["quality"] = max(0.0, min(1.0, quality_score))
 
         # 成长维度
         revenue_growth = data.get("revenue_growth", 0)
         net_profit_growth = data.get("net_profit_growth", 0)
 
-        growth_score = 0.5
         if revenue_growth > 20:
-            growth_score += 0.2
             growth = "high"
         elif revenue_growth > 5:
-            growth_score += 0.1
             growth = "moderate"
         else:
             growth = "low"
             if revenue_growth < 0:
                 risk_factors.append(f"营收增长={revenue_growth:.1f}% 为负")
 
-        if net_profit_growth > 30:
-            growth_score += 0.1
-        elif net_profit_growth < -10:
-            growth_score -= 0.1
+        if net_profit_growth < -10:
             risk_factors.append(f"净利润增长={net_profit_growth:.1f}% 大幅下滑")
-
-        scores["growth"] = max(0.0, min(1.0, growth_score))
-
-        # 综合评分
-        avg_score = sum(scores.values()) / len(scores) if scores else 0.5
 
         # 生成摘要
         summary_parts = []
@@ -469,7 +445,6 @@ class SentimentAnalystAgent(BaseAgent):
         # 资金流向判断
         main_inflow = data.get("main_net_inflow", 0)
         total_amount = data.get("total_amount", 0)
-        main_ratio = data.get("main_ratio", 0)
 
         # 主力资金方向
         if total_amount > 0:
@@ -596,28 +571,25 @@ class NewsAnalystAgent(BaseAgent):
                 summary="暂无相关新闻",
             )
 
-        # 提取事件
+        # 单次遍历：提取事件 + 情绪计算 + 重大事件识别
         events = []
         total_sentiment = 0.0
-        for news in news_list[:10]:  # 只取最近 10 条
+        major_events = []
+        recent = news_list[:10]
+        for news in recent:
+            sentiment = news.get("sentiment", 0)
             events.append({
                 "title": news.get("title", ""),
                 "source": news.get("source", ""),
                 "publish_time": news.get("publish_time", ""),
-                "impact": "positive" if news.get("sentiment", 0) > 0 else "negative" if news.get("sentiment", 0) < 0 else "neutral",
+                "impact": "positive" if sentiment > 0 else "negative" if sentiment < 0 else "neutral",
             })
-            total_sentiment += news.get("sentiment", 0)
+            total_sentiment += sentiment
+            if abs(sentiment) >= 0.6:
+                major_events.append(news.get("title", ""))
 
         # 计算平均情绪得分
-        avg_sentiment = total_sentiment / len(news_list) if news_list else 0.0
-
-        # 识别重大事件
-        major_events = []
-        for news in news_list:
-            title = news.get("title", "")
-            sentiment = news.get("sentiment", 0)
-            if abs(sentiment) >= 0.6:
-                major_events.append(title)
+        avg_sentiment = total_sentiment / len(recent) if recent else 0.0
 
         # 生成摘要
         summary_parts = []

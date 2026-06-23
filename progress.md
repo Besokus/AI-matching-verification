@@ -45,11 +45,20 @@
   - `agent/tests/test_synthesizer/test_tick_synthesizer.py` (created)
 
 ### Phase T1: gRPC 通信层
-- **Status:** pending
+- **Status:** complete
+- **Started:** 2026-06-22
+- **Completed:** 2026-06-22
 - Actions taken:
-  -
+  - T1.1: 定义 .proto 文件（MatchingEngineService, 消息类型, 枚举）
+  - T1.3: 创建 Python gRPC client 封装（EngineClient）
+  - T1.3: 实现所有 API：feed_order_event, submit_agent_order, get_snapshot, wait_drain
+  - T1.3: 创建 proto 编译脚本
+  - T1.3: 编写单元测试
 - Files created/modified:
-  -
+  - `agent/bridge/proto/matching_engine.proto` (created)
+  - `agent/bridge/engine_client.py` (created)
+  - `agent/bridge/generate_proto.py` (created)
+  - `agent/tests/test_bridge/test_engine_client.py` (created)
 
 ### Phase T2: Agent 框架
 - **Status:** pending

@@ -130,53 +130,53 @@ AKShare 分钟线 → TickSynthesizer → 合成逐笔事件 → gRPC → C++ �
 
 ---
 
-## Phase T3: 撮合引擎集成 (3天)
+## Phase T3: 撮合引擎集成 (3天) ✅
 
-### T3.1: 双实例运行模式 (1天)
-- [ ] 配置 RTAuction 双实例启动（不同端口）
-- [ ] 实现 EnginePool 管理两个引擎连接
-- [ ] 验证两个引擎独立运行，互不干扰
-- [ ] **验收标准**: 两个引擎同时启动，各自处理不同事件流
+### T3.1: 双实例运行模式 (1天) ✅
+- [x] 配置 RTAuction 双实例启动（不同端口）
+- [x] 实现 EnginePool 管理两个引擎连接
+- [x] 验证两个引擎独立运行，互不干扰
+- [x] **验收标准**: 两个引擎同时启动，各自处理不同事件流
 
-### T3.2: 回放主循环 (1天)
-- [ ] 创建 `agent/main.py` 回放主循环
-- [ ] 实现 tick 事件逐个喂入两个引擎
-- [ ] 实现每分钟边界触发 Agent 决策
-- [ ] 实现 wait_drain 同步机制
-- [ ] **验收标准**: 回放主循环能正确处理事件流，每分钟触发一次 Agent 决策
+### T3.2: 回放主循环 (1天) ✅
+- [x] 创建 `agent/main.py` 回放主循环
+- [x] 实现 tick 事件逐个喂入两个引擎
+- [x] 实现每分钟边界触发 Agent 决策
+- [x] 实现 wait_drain 同步机制
+- [x] **验收标准**: 回放主循环能正确处理事件流，每分钟触发一次 Agent 决策
 
-### T3.3: Agent 订单注入 + 成交追踪 (1天)
-- [ ] 实现 Agent 决策 → gRPC SubmitAgentOrder
-- [ ] 实现 MatchResult 回调收集
-- [ ] 实现持仓状态跟踪
-- [ ] **验收标准**: Agent 订单在引擎 B 中撮合，MatchResult 包含 Agent 订单 ID
+### T3.3: Agent 订单注入 + 成交追踪 (1天) ✅
+- [x] 实现 Agent 决策 → gRPC SubmitAgentOrder
+- [x] 实现 MatchResult 回调收集
+- [x] 实现持仓状态跟踪
+- [x] **验收标准**: Agent 订单在引擎 B 中撮合，MatchResult 包含 Agent 订单 ID
 
 **依赖**: T0 (Tick 合成器), T1 (gRPC 通信层)
 **输出**: 回放主循环可运行
 
 ---
 
-## Phase T4: 绩效统计 (2天)
+## Phase T4: 绩效统计 (2天) ✅
 
-### T4.1: 交易记录收集 (0.5天)
-- [ ] 创建 `agent/performance/collector.py`
-- [ ] 实现从引擎 B 收集 Agent 成交记录
-- [ ] 实现交易记录数据模型
-- [ ] **验收标准**: 能收集所有 Agent 成交记录，格式正确
+### T4.1: 交易记录收集 (0.5天) ✅
+- [x] 创建 `agent/performance/collector.py`
+- [x] 实现从引擎 B 收集 Agent 成交记录
+- [x] 实现交易记录数据模型
+- [x] **验收标准**: 能收集所有 Agent 成交记录，格式正确
 
-### T4.2: PnL / Sharpe / MaxDD 计算 (1天)
-- [ ] 创建 `agent/performance/calculator.py`
-- [ ] 实现 PnL 计算（已实现/未实现盈亏）
-- [ ] 实现夏普比率计算
-- [ ] 实现最大回撤计算
-- [ ] 创建 `tests/test_performance/` 测试套件
-- [ ] **验收标准**: 已知交易序列的 PnL/Sharpe/MaxDD 计算结果正确
+### T4.2: PnL / Sharpe / MaxDD 计算 (1天) ✅
+- [x] 创建 `agent/performance/calculator.py`
+- [x] 实现 PnL 计算（已实现/未实现盈亏）
+- [x] 实现夏普比率计算
+- [x] 实现最大回撤计算
+- [x] 创建 `tests/test_performance/` 测试套件
+- [x] **验收标准**: 已知交易序列的 PnL/Sharpe/MaxDD 计算结果正确
 
-### T4.3: 报告生成 (0.5天)
-- [ ] 创建 `agent/performance/reporter.py`
-- [ ] 实现 Markdown 格式报告生成
-- [ ] 包含：总收益率、夏普比率、最大回撤、交易明细、决策链路
-- [ ] **验收标准**: 生成的 Markdown 报告包含所有指标，格式清晰
+### T4.3: 报告生成 (0.5天) ✅
+- [x] 创建 `agent/performance/reporter.py`
+- [x] 实现 Markdown 格式报告生成
+- [x] 包含：总收益率、夏普比率、最大回撤、交易明细、决策链路
+- [x] **验收标准**: 生成的 Markdown 报告包含所有指标，格式清晰
 
 **依赖**: T3 (撮合引擎集成)
 **输出**: `agent/performance/` 模块

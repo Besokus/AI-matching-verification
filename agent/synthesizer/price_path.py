@@ -233,13 +233,16 @@ class PricePathGenerator:
         if len(points) < 2:
             return points
 
+        # 获取最大有效索引（从最后一点推断 n_points）
+        max_idx = points[-1][0]
+
         result = [points[0]]
         for i in range(1, len(points)):
             idx, price = points[i]
             prev_idx, _ = result[-1]
             if idx <= prev_idx:
-                # 移动到前一个点之后
-                idx = prev_idx + 1
+                # 移动到前一个点之后，但不超过最大索引
+                idx = min(prev_idx + 1, max_idx)
             result.append((idx, price))
 
         return result

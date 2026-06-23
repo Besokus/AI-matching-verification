@@ -209,7 +209,7 @@ class ConsecutiveLossRule(BaseRule):
 class ConfidenceRule(BaseRule):
     """置信度限制"""
 
-    def __init__(self, min_confidence: float = 0.3):
+    def __init__(self, min_confidence: float = 0.2):
         super().__init__("Confidence")
         self.min_confidence = min_confidence
 

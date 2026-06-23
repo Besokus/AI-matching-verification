@@ -22,8 +22,8 @@ from .rules import (
 class RiskConfig:
     """风控配置"""
     # Layer 1: Agent 规则
-    max_position_pct: float = 0.10  # 单笔最大仓位 10%
-    max_concentration_pct: float = 0.30  # 单股集中度 30%
+    max_position_pct: float = 0.20  # 单笔最大仓位 20%
+    max_concentration_pct: float = 0.50  # 单股集中度 50%
     limit_pct: float = 0.10  # 涨跌停 10%
     min_volume: int = 100  # 最小交易量（1 手）
     max_trades_per_minute: int = 3  # 每分钟最大交易次数
@@ -31,7 +31,7 @@ class RiskConfig:
     # Layer 2: 系统熔断
     max_daily_loss_pct: float = 0.05  # 单日最大亏损 5%
     max_consecutive_losses: int = 3  # 连续亏损次数
-    min_confidence: float = 0.3  # 最低置信度
+    min_confidence: float = 0.2  # 最低置信度
 
 
 class RiskEngine:

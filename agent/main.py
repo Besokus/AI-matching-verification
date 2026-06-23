@@ -48,6 +48,7 @@ class BacktestRunner:
         self.graph = TradingGraph(
             risk_config=config.risk,
             max_debate_rounds=config.backtest.max_debate_rounds,
+            data_provider=self.provider,
         )
         self.calculator = PerformanceCalculator(
             initial_capital=config.backtest.initial_capital,

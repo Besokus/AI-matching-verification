@@ -100,12 +100,17 @@ class TraderAgent(BaseAgent):
         last_price = snapshot.get("last_price", 0)
         current_volume = position.get("volume", 0)
 
-        if score > 0.3 and current_volume == 0:
-            # 买入
+        if score > 0.15 and current_volume == 0:
+            # 买入（按 20% 仓位限制计算，取整到 100 股）
             action = "BUY"
-            volume = 100  # 1 手
+            max_amount = 200_000
+            if last_price > 0:
+                volume = int(max_amount / last_price / 100) * 100
+                volume = max(100, volume)
+            else:
+                volume = 100
             confidence = min(0.9, score)
-        elif score < -0.3 and current_volume > 0:
+        elif score < -0.15 and current_volume > 0:
             # 卖出
             action = "SELL"
             volume = current_volume

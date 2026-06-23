@@ -19,6 +19,7 @@ from ..agents.analyst import (
     TechnicalAnalystAgent, FundamentalAnalystAgent,
     SentimentAnalystAgent, NewsAnalystAgent,
 )
+from ..agents.researcher import BullResearcher, BearResearcher, DebateModerator
 from ..agents.trader import TraderAgent
 from ..risk.engine import RiskEngine, RiskConfig
 
@@ -38,6 +39,7 @@ class TradingGraph:
         llm_quick: Any = None,
         risk_config: RiskConfig | None = None,
         max_debate_rounds: int = 2,
+        data_provider: Any = None,
     ):
         """
         Args:
@@ -45,6 +47,7 @@ class TradingGraph:
             llm_quick: 快速思考 LLM（用于分析）
             risk_config: 风控配置
             max_debate_rounds: 最大辩论轮次
+            data_provider: 数据 Provider（AKShareProvider）
         """
         self.llm_deep = llm_deep
         self.llm_quick = llm_quick
@@ -52,10 +55,19 @@ class TradingGraph:
 
         # 初始化 Agent
         self.technical_analyst = TechnicalAnalystAgent(llm_quick)
-        self.fundamental_analyst = FundamentalAnalystAgent(llm_quick)
-        self.sentiment_analyst = SentimentAnalystAgent(llm_quick)
-        self.news_analyst = NewsAnalystAgent(llm_quick)
+        self.fundamental_analyst = FundamentalAnalystAgent(llm_quick, data_provider)
+        self.sentiment_analyst = SentimentAnalystAgent(llm_quick, data_provider)
+        self.news_analyst = NewsAnalystAgent(llm_quick, data_provider)
         self.trader = TraderAgent(llm_deep)
+
+        # 初始化研究员和辩论主持人
+        self.bull_researcher = BullResearcher(llm_deep)
+        self.bear_researcher = BearResearcher(llm_deep)
+        self.debate_moderator = DebateModerator(
+            self.bull_researcher,
+            self.bear_researcher,
+            max_rounds=max_debate_rounds,
+        )
 
         # 初始化风控引擎
         self.risk_engine = RiskEngine(risk_config)
@@ -86,9 +98,10 @@ class TradingGraph:
         )
         node_timings["analysts"] = time.time() - analyst_start
 
-        # Step 2: 辩论（简化：直接使用分析师结论）
+        # Step 2: Bull/Bear 多轮辩论
         debate_start = time.time()
-        debate_state = self._run_debate(
+        debate_state = await self._run_debate(
+            state["security_id"],
             technical_report, fundamental_report,
             sentiment_report, news_report,
         )
@@ -145,65 +158,26 @@ class TradingGraph:
             "node_timings": node_timings,
         }
 
-    def _run_debate(
+    async def _run_debate(
         self,
+        security_id: str,
         technical: TechnicalReport,
         fundamental: FundamentalReport,
         sentiment: SentimentReport,
         news: NewsReport,
     ) -> DebateState:
-        """运行辩论（简化实现）
+        """运行 Bull/Bear 多轮辩论
 
-        Phase 1: 简化为直接汇总分析师结论
-        Phase 2: 实现完整的 Bull/Bear 辩论
+        Args:
+            security_id: 股票代码
+            technical: 技术面报告
+            fundamental: 基本面报告
+            sentiment: 情绪面报告
+            news: 新闻报告
+
+        Returns:
+            DebateState
         """
-        # 汇总分析师信号
-        signals = []
-        if technical.signal == "buy":
-            signals.append(1)
-        elif technical.signal == "sell":
-            signals.append(-1)
-        else:
-            signals.append(0)
-
-        if fundamental.valuation == "undervalued":
-            signals.append(1)
-        elif fundamental.valuation == "overvalued":
-            signals.append(-1)
-        else:
-            signals.append(0)
-
-        if sentiment.money_flow == "inflow":
-            signals.append(1)
-        elif sentiment.money_flow == "outflow":
-            signals.append(-1)
-        else:
-            signals.append(0)
-
-        avg_signal = sum(signals) / len(signals) if signals else 0
-
-        if avg_signal > _CONSENSUS_THRESHOLD:
-            consensus = "偏多"
-            confidence = min(0.9, avg_signal)
-            bull_arg = f"技术面{technical.signal}，基本面{fundamental.valuation}，资金{sentiment.money_flow}"
-            bear_arg = "存在回调风险"
-        elif avg_signal < -_CONSENSUS_THRESHOLD:
-            consensus = "偏空"
-            confidence = min(0.9, abs(avg_signal))
-            bull_arg = "存在反弹机会"
-            bear_arg = f"技术面{technical.signal}，基本面{fundamental.valuation}，资金{sentiment.money_flow}"
-        else:
-            consensus = "中性"
-            confidence = 0.5
-            bull_arg = "多空信号混杂"
-            bear_arg = "多空信号混杂"
-
-        return DebateState(
-            bull_argument=bull_arg,
-            bear_argument=bear_arg,
-            bull_history=[bull_arg],
-            bear_history=[bear_arg],
-            round=1,
-            consensus=consensus,
-            confidence=confidence,
+        return await self.debate_moderator.debate(
+            security_id, technical, fundamental, sentiment, news,
         )

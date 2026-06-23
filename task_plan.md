@@ -202,6 +202,153 @@ AKShare 分钟线 → TickSynthesizer → 合成逐笔事件 → gRPC → C++ �
 
 ---
 
+## Phase 1 增强: 完善 Agent 能力 (5天)
+
+### T6: 基本面分析师 Agent 实现 (1天)
+
+**目标**: 替换 Phase 1 简化实现，接入真实 AKShare 财务数据
+
+- [ ] 扩展 `AKShareProvider` 添加财务数据接口
+  - `get_financial_indicator(security_id)` → PE/PB/ROE/营收增长率
+  - `get_balance_sheet(security_id)` → 资产负债表关键指标
+  - `get_profit_statement(security_id)` → 利润表关键指标
+- [ ] 重写 `FundamentalAnalystAgent.run()` 接入真实数据
+  - 估值维度: PE/PB 与行业均值对比
+  - 质量维度: ROE/毛利率/资产负债率
+  - 成长维度: 营收增长率/净利润增长率
+  - 风险因子: 高负债/低现金流/业绩下滑
+- [ ] 实现规则引擎评分（无 LLM 时）
+  - 低估: PE < 行业均值 * 0.8 且 ROE > 15%
+  - 高估: PE > 行业均值 * 1.5 或 PB > 10
+  - 质量强: ROE > 20% 且毛利率 > 30%
+- [ ] 创建 `tests/test_agents/test_fundamental_analyst.py`
+
+**验收标准**:
+1. `FundamentalAnalystAgent.run("600519")` 返回包含真实 PE/PB/ROE 的 FundamentalReport
+2. 报告的 `valuation` 字段基于真实数据计算，非硬编码
+3. 单元测试覆盖低估/高估/质量强/风险因子场景
+
+**依赖**: T0.1 (AKShare 数据层)
+**输出**: `agent/agents/analyst.py` 中 FundamentalAnalystAgent 完整实现
+
+---
+
+### T7: 情绪面分析师 Agent 实现 (1天)
+
+**目标**: 替换 Phase 1 简化实现，接入 AKShare 资金流向数据
+
+- [ ] 扩展 `AKShareProvider` 添加资金流向接口
+  - `get_money_flow(security_id)` → 个股资金流向（主力/散户/净流入）
+  - `get_sector_flow(security_id)` → 所属板块资金流向
+  - `get_dragon_tiger(security_id)` → 龙虎榜数据（如有）
+- [ ] 重写 `SentimentAnalystAgent.run()` 接入真实数据
+  - 资金流向维度: 主力净流入/流出占比
+  - 机构动向: 大单占比变化
+  - 散户情绪: 小单方向
+- [ ] 实现规则引擎评分
+  - 资金流入: 主力净流入 > 总成交额 5% → "inflow"
+  - 资金流出: 主力净流出 > 总成交额 5% → "outflow"
+  - 机构活跃: 大单占比 > 40% → "active_buy/sell"
+- [ ] 创建 `tests/test_agents/test_sentiment_analyst.py`
+
+**验收标准**:
+1. `SentimentAnalystAgent.run("600519")` 返回包含真实资金流向的 SentimentReport
+2. 报告的 `money_flow` 字段基于真实数据计算
+3. 单元测试覆盖流入/流出/中性场景
+
+**依赖**: T0.1 (AKShare 数据层)
+**输出**: `agent/agents/analyst.py` 中 SentimentAnalystAgent 完整实现
+
+---
+
+### T8: 新闻分析师 Agent 实现 (1天)
+
+**目标**: 替换 Phase 1 简化实现，接入 AKShare 新闻/公告数据
+
+- [ ] 扩展 `AKShareProvider` 添加新闻接口
+  - `get_news(security_id)` → 个股相关新闻列表
+  - `get_announcements(security_id)` → 公告列表
+- [ ] 重写 `NewsAnalystAgent.run()` 接入真实数据
+  - 新闻事件提取: 标题/来源/时间/影响方向
+  - 情绪评分: 基于关键词规则（利好/利空/中性）
+  - 重大事件识别: 财报/分红/增减持/诉讼
+- [ ] 实现关键词情绪评分引擎
+  - 利好关键词: 增持/回购/业绩预增/中标/获批 → +0.3~+0.5
+  - 利空关键词: 减持/质押/业绩预减/处罚/诉讼 → -0.3~-0.5
+  - 中性: 其他 → 0.0
+- [ ] 创建 `tests/test_agents/test_news_analyst.py`
+
+**验收标准**:
+1. `NewsAnalystAgent.run("600519")` 返回包含真实新闻事件的 NewsReport
+2. 报告的 `sentiment_score` 基于关键词规则计算
+3. 单元测试覆盖利好/利空/中性场景
+
+**依赖**: T0.1 (AKShare 数据层)
+**输出**: `agent/agents/analyst.py` 中 NewsAnalystAgent 完整实现
+
+---
+
+### T9: Bull/Bear 多轮辩论机制 (1天)
+
+**目标**: 替换当前简化版 `_run_debate`，实现 LLM 驱动的多轮对抗辩论
+
+- [ ] 创建 `agent/agents/researcher.py` BullResearcher + BearResearcher
+  - BullResearcher: 基于分析师报告构建看多论据
+  - BearResearcher: 基于分析师报告构建看空论据
+  - 每轮辩论引用对方论据进行反驳
+- [ ] 重写 `TradingGraph._run_debate()` 支持多轮辩论
+  - 轮次控制: max_debate_rounds 配置（默认 2 轮）
+  - 每轮: Bull → Bear 交替发言
+  - 终止条件: 达到最大轮次或共识置信度 > 0.8
+- [ ] 实现辩论摘要提取
+  - 从辩论历史中提取关键论据
+  - 计算共识方向和置信度
+  - 生成辩论总结供交易员参考
+- [ ] 创建 `tests/test_agents/test_researcher.py`
+
+**验收标准**:
+1. Bull/Bear Researcher 能基于分析师报告生成有逻辑的论据
+2. 辩论支持 2+ 轮次，每轮引用对方论据
+3. 辩论结果包含 `consensus`、`confidence`、`bull_history`、`bear_history`
+4. 单元测试覆盖多轮辩论流程
+
+**依赖**: T6, T7, T8 (分析师报告作为辩论输入)
+**输出**: `agent/agents/researcher.py` + `TradingGraph._run_debate()` 重写
+
+---
+
+### T10: 记忆/反思系统 (1天)
+
+**目标**: 实现历史决策记录和反思注入，提升 Agent 决策质量
+
+- [ ] 创建 `agent/memory/` 模块
+  - `memory_store.py`: 决策记录存储（SQLite）
+  - `reflection.py`: 反思生成器
+  - `models.py`: MemoryRecord 数据模型
+- [ ] 实现 MemoryStore
+  - 记录每次决策: 时间/股票/决策/理由/结果/PnL
+  - 查询历史: 按股票/时间/结果筛选
+  - 统计: 胜率/平均盈亏/最大回撤
+- [ ] 实现 ReflectionGenerator
+  - 分析近期决策结果
+  - 识别成功/失败模式
+  - 生成反思摘要注入下一次决策
+- [ ] 集成到 TradingGraph
+  - 决策前: 注入历史反思到 Agent prompt
+  - 决策后: 记录当前决策到 MemoryStore
+- [ ] 创建 `tests/test_memory/` 测试套件
+
+**验收标准**:
+1. MemoryStore 能存储和查询决策记录
+2. ReflectionGenerator 能基于历史决策生成反思
+3. 反思内容注入到交易员 Agent 的 prompt 中
+4. 单元测试覆盖存储/查询/反思生成
+
+**依赖**: T9 (辩论机制完善后)
+**输出**: `agent/memory/` 模块
+
+---
+
 ## 关键决策记录
 
 | 决策 | 理由 |
@@ -223,3 +370,8 @@ AKShare 分钟线 → TickSynthesizer → 合成逐笔事件 → gRPC → C++ �
 | T3 | Agent 订单在引擎 B 中撮合 | MatchResult 日志 |
 | T4 | PnL/Sharpe/MaxDD 计算正确 | 已知数据测试 |
 | T5 | 单股票 1 天回测跑通 | CLI 端到端 |
+| T6 | FundamentalReport 包含真实 PE/PB/ROE | pytest + 数据验证 |
+| T7 | SentimentReport 包含真实资金流向 | pytest + 数据验证 |
+| T8 | NewsReport 包含真实新闻事件 | pytest + 数据验证 |
+| T9 | 辩论支持 2+ 轮次，有共识和置信度 | pytest |
+| T10 | 决策记录可存储/查询，反思可生成 | pytest |

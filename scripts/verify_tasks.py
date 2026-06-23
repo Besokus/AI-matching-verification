@@ -448,9 +448,305 @@ def check_t5() -> list[CheckResult]:
     return results
 
 
+def check_t6() -> list[CheckResult]:
+    """T6: 基本面分析师 Agent"""
+    results = []
+
+    # 检查 AKShareProvider 有财务数据接口
+    try:
+        from agent.data.providers.akshare_provider import AKShareProvider
+        provider = AKShareProvider.__new__(AKShareProvider)
+        has_financial = hasattr(provider, "get_financial_indicator")
+        results.append(CheckResult(
+            task="T6",
+            check="AKShareProvider 财务数据接口",
+            passed=has_financial,
+            message="get_financial_indicator 存在" if has_financial else "缺少 get_financial_indicator",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T6",
+            check="AKShareProvider 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    # 检查 FundamentalAnalystAgent 实现
+    try:
+        from agent.agents.analyst import FundamentalAnalystAgent
+        agent = FundamentalAnalystAgent.__new__(FundamentalAnalystAgent)
+        has_run = hasattr(agent, "run")
+        has_score_valuation = hasattr(agent, "_score_valuation") or hasattr(agent, "_analyze_with_rules")
+        results.append(CheckResult(
+            task="T6",
+            check="FundamentalAnalystAgent 接口完整",
+            passed=has_run,
+            message=f"run={has_run}",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T6",
+            check="FundamentalAnalystAgent 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    # 检查测试文件
+    test_file = project_root / "agent/tests/test_agents/test_fundamental_analyst.py"
+    results.append(CheckResult(
+        task="T6",
+        check="测试文件存在",
+        passed=test_file.exists(),
+        message="" if test_file.exists() else "缺少 test_fundamental_analyst.py",
+    ))
+
+    return results
+
+
+def check_t7() -> list[CheckResult]:
+    """T7: 情绪面分析师 Agent"""
+    results = []
+
+    # 检查 AKShareProvider 有资金流向接口
+    try:
+        from agent.data.providers.akshare_provider import AKShareProvider
+        provider = AKShareProvider.__new__(AKShareProvider)
+        has_money_flow = hasattr(provider, "get_money_flow")
+        results.append(CheckResult(
+            task="T7",
+            check="AKShareProvider 资金流向接口",
+            passed=has_money_flow,
+            message="get_money_flow 存在" if has_money_flow else "缺少 get_money_flow",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T7",
+            check="AKShareProvider 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    # 检查 SentimentAnalystAgent 实现
+    try:
+        from agent.agents.analyst import SentimentAnalystAgent
+        agent = SentimentAnalystAgent.__new__(SentimentAnalystAgent)
+        has_run = hasattr(agent, "run")
+        results.append(CheckResult(
+            task="T7",
+            check="SentimentAnalystAgent 接口完整",
+            passed=has_run,
+            message=f"run={has_run}",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T7",
+            check="SentimentAnalystAgent 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    # 检查测试文件
+    test_file = project_root / "agent/tests/test_agents/test_sentiment_analyst.py"
+    results.append(CheckResult(
+        task="T7",
+        check="测试文件存在",
+        passed=test_file.exists(),
+        message="" if test_file.exists() else "缺少 test_sentiment_analyst.py",
+    ))
+
+    return results
+
+
+def check_t8() -> list[CheckResult]:
+    """T8: 新闻分析师 Agent"""
+    results = []
+
+    # 检查 AKShareProvider 有新闻接口
+    try:
+        from agent.data.providers.akshare_provider import AKShareProvider
+        provider = AKShareProvider.__new__(AKShareProvider)
+        has_news = hasattr(provider, "get_news")
+        results.append(CheckResult(
+            task="T8",
+            check="AKShareProvider 新闻接口",
+            passed=has_news,
+            message="get_news 存在" if has_news else "缺少 get_news",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T8",
+            check="AKShareProvider 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    # 检查 NewsAnalystAgent 实现
+    try:
+        from agent.agents.analyst import NewsAnalystAgent
+        agent = NewsAnalystAgent.__new__(NewsAnalystAgent)
+        has_run = hasattr(agent, "run")
+        results.append(CheckResult(
+            task="T8",
+            check="NewsAnalystAgent 接口完整",
+            passed=has_run,
+            message=f"run={has_run}",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T8",
+            check="NewsAnalystAgent 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    # 检查测试文件
+    test_file = project_root / "agent/tests/test_agents/test_news_analyst.py"
+    results.append(CheckResult(
+        task="T8",
+        check="测试文件存在",
+        passed=test_file.exists(),
+        message="" if test_file.exists() else "缺少 test_news_analyst.py",
+    ))
+
+    return results
+
+
+def check_t9() -> list[CheckResult]:
+    """T9: Bull/Bear 多轮辩论机制"""
+    results = []
+
+    # 检查 researcher 模块
+    researcher_file = project_root / "agent/agents/researcher.py"
+    results.append(CheckResult(
+        task="T9",
+        check="researcher.py 文件存在",
+        passed=researcher_file.exists(),
+        message="" if researcher_file.exists() else "缺少 researcher.py",
+    ))
+
+    if researcher_file.exists():
+        try:
+            from agent.agents.researcher import BullResearcher, BearResearcher
+            results.append(CheckResult(
+                task="T9",
+                check="Bull/Bear Researcher 可导入",
+                passed=True,
+                message="BullResearcher, BearResearcher",
+            ))
+        except ImportError as e:
+            results.append(CheckResult(
+                task="T9",
+                check="Bull/Bear Researcher 可导入",
+                passed=False,
+                message=str(e),
+            ))
+
+    # 检查 TradingGraph 辩论实现
+    try:
+        from agent.graph.trading_graph import TradingGraph
+        graph = TradingGraph.__new__(TradingGraph)
+        has_debate = hasattr(graph, "_run_debate")
+        results.append(CheckResult(
+            task="T9",
+            check="TradingGraph._run_debate 存在",
+            passed=has_debate,
+            message="" if has_debate else "缺少 _run_debate 方法",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T9",
+            check="TradingGraph 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    # 检查测试文件
+    test_file = project_root / "agent/tests/test_agents/test_researcher.py"
+    results.append(CheckResult(
+        task="T9",
+        check="测试文件存在",
+        passed=test_file.exists(),
+        message="" if test_file.exists() else "缺少 test_researcher.py",
+    ))
+
+    return results
+
+
+def check_t10() -> list[CheckResult]:
+    """T10: 记忆/反思系统"""
+    results = []
+
+    # 检查 memory 模块文件
+    memory_files = [
+        "agent/memory/__init__.py",
+        "agent/memory/memory_store.py",
+        "agent/memory/reflection.py",
+        "agent/memory/models.py",
+    ]
+    for f in memory_files:
+        path = project_root / f
+        results.append(CheckResult(
+            task="T10",
+            check=f"文件 {f} 存在",
+            passed=path.exists(),
+            message="" if path.exists() else f"缺少文件: {f}",
+        ))
+
+    # 检查 MemoryStore 可导入
+    try:
+        from agent.memory.memory_store import MemoryStore
+        store = MemoryStore.__new__(MemoryStore)
+        has_store = hasattr(store, "record_decision")
+        has_query = hasattr(store, "query_history")
+        results.append(CheckResult(
+            task="T10",
+            check="MemoryStore 接口完整",
+            passed=has_store and has_query,
+            message=f"record_decision={has_store}, query_history={has_query}",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T10",
+            check="MemoryStore 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    # 检查 ReflectionGenerator 可导入
+    try:
+        from agent.memory.reflection import ReflectionGenerator
+        gen = ReflectionGenerator.__new__(ReflectionGenerator)
+        has_generate = hasattr(gen, "generate_reflection")
+        results.append(CheckResult(
+            task="T10",
+            check="ReflectionGenerator 接口完整",
+            passed=has_generate,
+            message=f"generate_reflection={has_generate}",
+        ))
+    except Exception as e:
+        results.append(CheckResult(
+            task="T10",
+            check="ReflectionGenerator 可导入",
+            passed=False,
+            message=str(e),
+        ))
+
+    # 检查测试文件
+    test_dir = project_root / "agent/tests/test_memory"
+    results.append(CheckResult(
+        task="T10",
+        check="测试目录存在",
+        passed=test_dir.exists(),
+        message="" if test_dir.exists() else "缺少 tests/test_memory/ 目录",
+    ))
+
+    return results
+
+
 def run_all_checks() -> list[CheckResult]:
     """运行所有检查"""
     all_results = []
+    # Phase 1 MVP
     all_results.extend(check_t0_1())
     all_results.extend(check_t0_2())
     all_results.extend(check_t0_3())
@@ -462,6 +758,12 @@ def run_all_checks() -> list[CheckResult]:
     all_results.extend(check_t3())
     all_results.extend(check_t4())
     all_results.extend(check_t5())
+    # Phase 1 增强
+    all_results.extend(check_t6())
+    all_results.extend(check_t7())
+    all_results.extend(check_t8())
+    all_results.extend(check_t9())
+    all_results.extend(check_t10())
     return all_results
 
 

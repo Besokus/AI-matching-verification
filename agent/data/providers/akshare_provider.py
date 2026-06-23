@@ -1,9 +1,14 @@
 """AKShare 数据 Provider - 获取 A 股行情数据"""
 
+import os
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
+
+# 绕过系统代理（AKShare 不需要代理访问国内数据源）
+for _proxy_key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+    os.environ.pop(_proxy_key, None)
 
 import akshare as ak
 import pandas as pd
@@ -123,35 +128,31 @@ class AKShareProvider:
             if cached:
                 return cached
 
-        # 从 AKShare 获取数据
-        # 注意：AKShare 分钟线接口一次最多获取 5 天数据
-        all_klines = []
-        current_start = datetime.strptime(start_date, "%Y-%m-%d")
-        end = datetime.strptime(end_date, "%Y-%m-%d")
+        # 使用 stock_zh_a_minute 接口（新浪数据源，国内可直接访问）
+        # 需要加市场前缀：sh/sz
+        market = "sh" if security_id.startswith("6") else "sz"
+        symbol = f"{market}{security_id}"
 
-        while current_start <= end:
-            current_end = min(current_start + timedelta(days=4), end)
-            try:
-                df = ak.stock_zh_a_hist_min_em(
-                    symbol=security_id,
-                    start_date=current_start.strftime("%Y-%m-%d %H:%M:%S"),
-                    end_date=current_end.strftime("%Y-%m-%d %H:%M:%S"),
-                    period="1",
-                    adjust="qfq",
-                )
-                if df is not None and not df.empty:
-                    klines = self._parse_minute_df(df, security_id)
-                    all_klines.extend(klines)
-            except Exception as e:
-                print(f"[AKShare] 获取分钟线失败: {security_id} {current_start}-{current_end}: {e}")
+        try:
+            df = ak.stock_zh_a_minute(symbol=symbol, period="1")
+            if df is None or df.empty:
+                return []
 
-            current_start = current_end + timedelta(days=1)
+            # 解析并过滤日期范围
+            all_klines = self._parse_minute_df_v2(df, security_id)
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
 
-        # 写入缓存
-        if all_klines:
-            self._cache_minute_klines(all_klines)
+            filtered = [k for k in all_klines if start_dt <= k.timestamp <= end_dt]
 
-        return all_klines
+            # 写入缓存
+            if filtered:
+                self._cache_minute_klines(filtered)
+
+            return filtered
+        except Exception as e:
+            print(f"[AKShare] 获取分钟线失败: {security_id}: {e}")
+            return []
 
     def get_daily_klines(
         self,
@@ -177,11 +178,13 @@ class AKShareProvider:
                 return cached
 
         try:
-            df = ak.stock_zh_a_hist(
-                symbol=security_id,
-                period="daily",
-                start_date=start_date,
-                end_date=end_date,
+            # 使用新浪数据源（国内可直接访问）
+            market = "sh" if security_id.startswith("6") else "sz"
+            symbol = f"{market}{security_id}"
+            df = ak.stock_zh_a_daily(
+                symbol=symbol,
+                start_date=start_date.replace("-", ""),
+                end_date=end_date.replace("-", ""),
                 adjust="qfq",
             )
             if df is None or df.empty:
@@ -195,7 +198,7 @@ class AKShareProvider:
             return []
 
     def _parse_minute_df(self, df: pd.DataFrame, security_id: str) -> list[KLine]:
-        """解析分钟线 DataFrame"""
+        """解析分钟线 DataFrame（东方财富格式）"""
         klines = []
         for row in df.itertuples(index=False):
             try:
@@ -214,21 +217,52 @@ class AKShareProvider:
                 continue
         return klines
 
-    def _parse_daily_df(self, df: pd.DataFrame, security_id: str) -> list[DailyKLine]:
-        """解析日线 DataFrame"""
+    def _parse_minute_df_v2(self, df: pd.DataFrame, security_id: str) -> list[KLine]:
+        """解析分钟线 DataFrame（新浪格式：day/open/high/low/close/volume/amount）"""
         klines = []
         for row in df.itertuples(index=False):
             try:
+                klines.append(KLine(
+                    security_id=security_id,
+                    timestamp=pd.to_datetime(row.day),
+                    open=float(row.open),
+                    high=float(row.high),
+                    low=float(row.low),
+                    close=float(row.close),
+                    volume=int(row.volume),
+                    amount=float(getattr(row, "amount", 0)),
+                ))
+            except (AttributeError, ValueError) as e:
+                print(f"[AKShare] 解析分钟线行失败: {e}")
+                continue
+        return klines
+
+    def _parse_daily_df(self, df: pd.DataFrame, security_id: str) -> list[DailyKLine]:
+        """解析日线 DataFrame（兼容新浪和东方财富格式）"""
+        klines = []
+        for row in df.itertuples(index=False):
+            try:
+                # 新浪格式：date/open/high/low/close/volume/amount/turnover
+                # 东方财富格式：日期/开盘/最高/最低/收盘/成交量/成交额/换手率
+                date_val = getattr(row, "date", None) or getattr(row, "日期", "")
+                open_val = getattr(row, "open", None) or getattr(row, "开盘", 0)
+                high_val = getattr(row, "high", None) or getattr(row, "最高", 0)
+                low_val = getattr(row, "low", None) or getattr(row, "最低", 0)
+                close_val = getattr(row, "close", None) or getattr(row, "收盘", 0)
+                volume_val = getattr(row, "volume", None) or getattr(row, "成交量", 0)
+                amount_val = getattr(row, "amount", None) or getattr(row, "成交额", 0)
+                turnover_val = getattr(row, "turnover", None) or getattr(row, "换手率", 0)
+
                 klines.append(DailyKLine(
                     security_id=security_id,
-                    date=str(row.日期),
-                    open=float(row.开盘),
-                    high=float(row.最高),
-                    low=float(row.最低),
-                    close=float(row.收盘),
-                    volume=int(row.成交量),
-                    amount=float(getattr(row, "成交额", 0)),
-                    turnover_rate=float(getattr(row, "换手率", 0)),
+                    date=str(date_val),
+                    open=float(open_val),
+                    high=float(high_val),
+                    low=float(low_val),
+                    close=float(close_val),
+                    volume=int(volume_val),
+                    amount=float(amount_val),
+                    turnover_rate=float(turnover_val),
                 ))
             except (AttributeError, ValueError) as e:
                 print(f"[AKShare] 解析日线行失败: {e}")

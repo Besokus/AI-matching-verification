@@ -12,6 +12,8 @@ import math
 from dataclasses import dataclass, field
 from datetime import datetime
 
+import numpy as np
+
 
 @dataclass
 class TradeRecord:
@@ -284,9 +286,9 @@ class PerformanceCalculator:
             return 0.0
 
         # 计算平均收益率和标准差
-        avg_return = sum(returns) / len(returns)
-        variance = sum((r - avg_return) ** 2 for r in returns) / len(returns)
-        std_return = math.sqrt(variance) if variance > 0 else 0
+        returns_arr = np.array(returns)
+        avg_return = returns_arr.mean()
+        std_return = returns_arr.std()
 
         if std_return == 0:
             return 0.0

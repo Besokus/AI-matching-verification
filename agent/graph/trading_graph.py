@@ -7,6 +7,7 @@
 - 风控规则检查
 """
 
+import asyncio
 import time
 from typing import Any
 
@@ -20,6 +21,9 @@ from ..agents.analyst import (
 )
 from ..agents.trader import TraderAgent
 from ..risk.engine import RiskEngine, RiskConfig
+
+
+_CONSENSUS_THRESHOLD = 0.3  # 辩论共识阈值
 
 
 class TradingGraph:
@@ -69,31 +73,18 @@ class TradingGraph:
         node_timings = {}
 
         # Step 1: 并行运行分析师
-        tech_start = time.time()
-        technical_report = await self.technical_analyst.run(
-            security_id=state["security_id"],
-            snapshot=state["market_snapshot"],
-            klines=state["recent_klines"],
+        analyst_start = time.time()
+        technical_report, fundamental_report, sentiment_report, news_report = await asyncio.gather(
+            self.technical_analyst.run(
+                security_id=state["security_id"],
+                snapshot=state["market_snapshot"],
+                klines=state["recent_klines"],
+            ),
+            self.fundamental_analyst.run(security_id=state["security_id"]),
+            self.sentiment_analyst.run(security_id=state["security_id"]),
+            self.news_analyst.run(security_id=state["security_id"]),
         )
-        node_timings["technical_analyst"] = time.time() - tech_start
-
-        fund_start = time.time()
-        fundamental_report = await self.fundamental_analyst.run(
-            security_id=state["security_id"],
-        )
-        node_timings["fundamental_analyst"] = time.time() - fund_start
-
-        sent_start = time.time()
-        sentiment_report = await self.sentiment_analyst.run(
-            security_id=state["security_id"],
-        )
-        node_timings["sentiment_analyst"] = time.time() - sent_start
-
-        news_start = time.time()
-        news_report = await self.news_analyst.run(
-            security_id=state["security_id"],
-        )
-        node_timings["news_analyst"] = time.time() - news_start
+        node_timings["analysts"] = time.time() - analyst_start
 
         # Step 2: 辩论（简化：直接使用分析师结论）
         debate_start = time.time()
@@ -119,12 +110,13 @@ class TradingGraph:
 
         # Step 4: 风控检查
         risk_start = time.time()
+        position = state.get("position", {})
         risk_context = {
-            "total_capital": 1_000_000,  # TODO: 从配置获取
-            "position": state.get("position", {}),
-            "daily_pnl": state.get("position", {}).get("pnl", 0),
-            "consecutive_losses": 0,  # TODO: 从历史获取
-            "recent_trades_count": 0,  # TODO: 从历史获取
+            "total_capital": state.get("total_capital", 1_000_000),
+            "position": position,
+            "daily_pnl": position.get("pnl", 0),
+            "consecutive_losses": state.get("consecutive_losses", 0),
+            "recent_trades_count": state.get("recent_trades_count", 0),
             "last_close": state["market_snapshot"].get("last_price", 0),
         }
         risk_decision = self.risk_engine.check(order_decision, risk_context)
@@ -190,12 +182,12 @@ class TradingGraph:
 
         avg_signal = sum(signals) / len(signals) if signals else 0
 
-        if avg_signal > 0.3:
+        if avg_signal > _CONSENSUS_THRESHOLD:
             consensus = "偏多"
             confidence = min(0.9, avg_signal)
             bull_arg = f"技术面{technical.signal}，基本面{fundamental.valuation}，资金{sentiment.money_flow}"
             bear_arg = "存在回调风险"
-        elif avg_signal < -0.3:
+        elif avg_signal < -_CONSENSUS_THRESHOLD:
             consensus = "偏空"
             confidence = min(0.9, abs(avg_signal))
             bull_arg = "存在反弹机会"

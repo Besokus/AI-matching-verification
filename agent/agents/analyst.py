@@ -10,8 +10,13 @@
 import json
 from typing import Any
 
+import numpy as np
+
 from .base import BaseAgent
 from ..graph.state import TechnicalReport, FundamentalReport, SentimentReport, NewsReport
+
+_RSI_OVERSOLD = 30
+_RSI_OVERBOUGHT = 70
 
 
 class TechnicalAnalystAgent(BaseAgent):
@@ -55,10 +60,13 @@ class TechnicalAnalystAgent(BaseAgent):
         if not klines or len(klines) < 5:
             return {}
 
-        closes = [k.get("close", 0) for k in klines]
-        highs = [k.get("high", 0) for k in klines]
-        lows = [k.get("low", 0) for k in klines]
-        volumes = [k.get("volume", 0) for k in klines]
+        # 单次遍历提取所有列
+        closes, highs, lows, volumes = [], [], [], []
+        for k in klines:
+            closes.append(k.get("close", 0))
+            highs.append(k.get("high", 0))
+            lows.append(k.get("low", 0))
+            volumes.append(k.get("volume", 0))
 
         indicators = {}
 
@@ -77,7 +85,7 @@ class TechnicalAnalystAgent(BaseAgent):
             rsi = self._rsi(closes, 14)
             indicators["rsi"] = {
                 "value": rsi,
-                "signal": "oversold" if rsi < 30 else "overbought" if rsi > 70 else "neutral",
+                "signal": "oversold" if rsi < _RSI_OVERSOLD else "overbought" if rsi > _RSI_OVERBOUGHT else "neutral",
             }
 
         # 布林带
@@ -233,10 +241,9 @@ class TechnicalAnalystAgent(BaseAgent):
         if len(data) < period:
             return {}
 
-        recent = data[-period:]
-        middle = sum(recent) / period
-        variance = sum((x - middle) ** 2 for x in recent) / period
-        std = variance ** 0.5
+        recent = np.array(data[-period:])
+        middle = recent.mean()
+        std = recent.std()
 
         return {
             "upper": middle + std_dev * std,

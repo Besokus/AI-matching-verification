@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .risk.engine import RiskConfig
+from .synthesizer.tick_synthesizer import SynthesizerConfig
 
 
 @dataclass
@@ -16,15 +17,6 @@ class LLMConfig:
     base_url: str = ""
     temperature: float = 0.7
     max_tokens: int = 4096
-
-
-@dataclass
-class SynthesizerConfig:
-    """合成器配置"""
-    volatility: float = 0.02
-    points_per_minute: int = 60
-    cancel_ratio: float = 0.15
-    seed: int | None = None
 
 
 @dataclass

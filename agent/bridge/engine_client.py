@@ -5,6 +5,7 @@
 
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 import grpc
@@ -46,11 +47,20 @@ class EngineClient:
         client.disconnect()
     """
 
+    _pb2 = None  # lazy-loaded protobuf module
+
     def __init__(self, config: EngineConfig | None = None):
         self.config = config or EngineConfig()
         self._channel: Optional[grpc.Channel] = None
         self._stub = None
         self._connected = False
+
+    @classmethod
+    def _get_pb2(cls):
+        if cls._pb2 is None:
+            from .proto import matching_engine_pb2
+            cls._pb2 = matching_engine_pb2
+        return cls._pb2
 
     def connect(self) -> bool:
         """连接到撮合引擎 gRPC server
@@ -97,17 +107,16 @@ class EngineClient:
             是否成功
         """
         self._ensure_connected()
-
-        from .proto import matching_engine_pb2
+        pb2 = self._get_pb2()
 
         # 将 TickEvent 转换为 protobuf OrderEvent
-        order_event = matching_engine_pb2.OrderEvent(
+        order_event = pb2.OrderEvent(
             security_id=event.security_id,
             order_id=event.order_id,
             price=event.price,
             volume=event.volume,
-            side=matching_engine_pb2.ORDER_SIDE_BUY if event.side == "BUY" else matching_engine_pb2.ORDER_SIDE_SELL,
-            order_type=matching_engine_pb2.ORDER_TYPE_LIMIT,
+            side=pb2.ORDER_SIDE_BUY if event.side == "BUY" else pb2.ORDER_SIDE_SELL,
+            order_type=pb2.ORDER_TYPE_LIMIT,
             timestamp_ns=int(event.timestamp.timestamp() * 1e9),
             event_kind=self._map_event_type(event.event_type),
         )
@@ -129,10 +138,9 @@ class EngineClient:
             是否成功
         """
         self._ensure_connected()
+        pb2 = self._get_pb2()
 
-        from .proto import matching_engine_pb2
-
-        trade_event = matching_engine_pb2.TradeEvent(
+        trade_event = pb2.TradeEvent(
             security_id=event.security_id,
             trade_id=event.trade_id,
             price=event.price,
@@ -172,15 +180,14 @@ class EngineClient:
             {"success": bool, "order_id": int, "status": str}
         """
         self._ensure_connected()
+        pb2 = self._get_pb2()
 
-        from .proto import matching_engine_pb2
-
-        agent_order = matching_engine_pb2.AgentOrder(
+        agent_order = pb2.AgentOrder(
             security_id=security_id,
             price=price,
             volume=volume,
-            side=matching_engine_pb2.ORDER_SIDE_BUY if side == "BUY" else matching_engine_pb2.ORDER_SIDE_SELL,
-            order_type=matching_engine_pb2.ORDER_TYPE_LIMIT,
+            side=pb2.ORDER_SIDE_BUY if side == "BUY" else pb2.ORDER_SIDE_SELL,
+            order_type=pb2.ORDER_TYPE_LIMIT,
             agent_id=agent_id,
             reason=reason,
         )
@@ -208,10 +215,9 @@ class EngineClient:
             是否成功
         """
         self._ensure_connected()
+        pb2 = self._get_pb2()
 
-        from .proto import matching_engine_pb2
-
-        cancel_request = matching_engine_pb2.CancelRequest(
+        cancel_request = pb2.CancelRequest(
             security_id=security_id,
             order_id=order_id,
         )
@@ -233,10 +239,9 @@ class EngineClient:
             MarketSnapshot 或 None
         """
         self._ensure_connected()
+        pb2 = self._get_pb2()
 
-        from .proto import matching_engine_pb2
-
-        request = matching_engine_pb2.SnapshotRequest(security_id=security_id)
+        request = pb2.SnapshotRequest(security_id=security_id)
 
         try:
             result = self._stub.GetMarketSnapshot(request, timeout=self.config.timeout)
@@ -245,7 +250,6 @@ class EngineClient:
             bids = [(level.price, level.volume) for level in result.bids]
             asks = [(level.price, level.volume) for level in result.asks]
 
-            from datetime import datetime
             return MarketSnapshot(
                 security_id=result.security_id,
                 timestamp=datetime.fromtimestamp(result.timestamp_ns / 1e9),
@@ -274,10 +278,9 @@ class EngineClient:
             成交记录列表
         """
         self._ensure_connected()
+        pb2 = self._get_pb2()
 
-        from .proto import matching_engine_pb2
-
-        request = matching_engine_pb2.TradeQuery(
+        request = pb2.TradeQuery(
             security_id=security_id,
             agent_id=agent_id,
         )
@@ -312,10 +315,9 @@ class EngineClient:
             是否成功排空
         """
         self._ensure_connected()
+        pb2 = self._get_pb2()
 
-        from .proto import matching_engine_pb2
-
-        request = matching_engine_pb2.DrainRequest(
+        request = pb2.DrainRequest(
             security_id=security_id,
             timeout_ms=timeout_ms,
         )
@@ -337,10 +339,9 @@ class EngineClient:
             状态字典
         """
         self._ensure_connected()
+        pb2 = self._get_pb2()
 
-        from .proto import matching_engine_pb2
-
-        request = matching_engine_pb2.StatusRequest(detailed=detailed)
+        request = pb2.StatusRequest(detailed=detailed)
 
         try:
             result = self._stub.GetEngineStatus(request, timeout=self.config.timeout)
@@ -362,33 +363,33 @@ class EngineClient:
 
     def _map_event_type(self, event_type: str):
         """映射事件类型到 protobuf 枚举"""
-        from .proto import matching_engine_pb2
+        pb2 = self._get_pb2()
         mapping = {
-            "ORDER_ADD": matching_engine_pb2.ORDER_EVENT_ADD,
-            "ORDER_CANCEL": matching_engine_pb2.ORDER_EVENT_CANCEL,
-            "ORDER_MODIFY": matching_engine_pb2.ORDER_EVENT_MODIFY,
+            "ORDER_ADD": pb2.ORDER_EVENT_ADD,
+            "ORDER_CANCEL": pb2.ORDER_EVENT_CANCEL,
+            "ORDER_MODIFY": pb2.ORDER_EVENT_MODIFY,
         }
-        return mapping.get(event_type, matching_engine_pb2.ORDER_EVENT_ADD)
+        return mapping.get(event_type, pb2.ORDER_EVENT_ADD)
 
     def _map_order_status(self, status) -> str:
         """映射 protobuf 枚举到字符串"""
-        from .proto import matching_engine_pb2
+        pb2 = self._get_pb2()
         mapping = {
-            matching_engine_pb2.ORDER_STATUS_NEW: "NEW",
-            matching_engine_pb2.ORDER_STATUS_PARTIAL: "PARTIAL",
-            matching_engine_pb2.ORDER_STATUS_FILLED: "FILLED",
-            matching_engine_pb2.ORDER_STATUS_CANCELLED: "CANCELLED",
-            matching_engine_pb2.ORDER_STATUS_REJECTED: "REJECTED",
+            pb2.ORDER_STATUS_NEW: "NEW",
+            pb2.ORDER_STATUS_PARTIAL: "PARTIAL",
+            pb2.ORDER_STATUS_FILLED: "FILLED",
+            pb2.ORDER_STATUS_CANCELLED: "CANCELLED",
+            pb2.ORDER_STATUS_REJECTED: "REJECTED",
         }
         return mapping.get(status, "UNKNOWN")
 
     def _map_engine_state(self, state) -> str:
         """映射引擎状态"""
-        from .proto import matching_engine_pb2
+        pb2 = self._get_pb2()
         mapping = {
-            matching_engine_pb2.ENGINE_STATE_IDLE: "IDLE",
-            matching_engine_pb2.ENGINE_STATE_RUNNING: "RUNNING",
-            matching_engine_pb2.ENGINE_STATE_PAUSED: "PAUSED",
-            matching_engine_pb2.ENGINE_STATE_STOPPED: "STOPPED",
+            pb2.ENGINE_STATE_IDLE: "IDLE",
+            pb2.ENGINE_STATE_RUNNING: "RUNNING",
+            pb2.ENGINE_STATE_PAUSED: "PAUSED",
+            pb2.ENGINE_STATE_STOPPED: "STOPPED",
         }
         return mapping.get(state, "UNKNOWN")

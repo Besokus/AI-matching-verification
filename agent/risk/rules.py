@@ -26,17 +26,15 @@ class BaseRule(ABC):
     def __init__(self, name: str):
         self.name = name
 
-    @abstractmethod
     def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        """评估规则
+        """评估规则（HOLD 自动跳过，子类实现 _evaluate）"""
+        if decision.action == "HOLD":
+            return RuleResult(passed=True, reason="HOLD 无需检查")
+        return self._evaluate(decision, context)
 
-        Args:
-            decision: 订单决策
-            context: 上下文（持仓、资金、历史交易等）
-
-        Returns:
-            RuleResult
-        """
+    @abstractmethod
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
+        """子类实现具体的规则检查逻辑"""
         pass
 
 
@@ -50,10 +48,7 @@ class MaxPositionRule(BaseRule):
         super().__init__("MaxPosition")
         self.max_pct = max_pct  # 默认 10%
 
-    def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        if decision.action == "HOLD":
-            return RuleResult(passed=True, reason="HOLD 无需检查")
-
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
         total_capital = context.get("total_capital", 1_000_000)
         order_value = decision.price * decision.volume
 
@@ -88,10 +83,7 @@ class ConcentrationRule(BaseRule):
         super().__init__("Concentration")
         self.max_pct = max_pct  # 默认 30%
 
-    def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        if decision.action == "HOLD":
-            return RuleResult(passed=True, reason="HOLD 无需检查")
-
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
         total_capital = context.get("total_capital", 1_000_000)
         position = context.get("position", {})
         current_value = position.get("volume", 0) * position.get("avg_price", 0)
@@ -118,10 +110,7 @@ class LimitPriceRule(BaseRule):
         super().__init__("LimitPrice")
         self.limit_pct = limit_pct  # A 股涨跌停 10%
 
-    def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        if decision.action == "HOLD":
-            return RuleResult(passed=True, reason="HOLD 无需检查")
-
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
         last_close = context.get("last_close", decision.price)
         upper_limit = last_close * (1 + self.limit_pct)
         lower_limit = last_close * (1 - self.limit_pct)
@@ -148,10 +137,7 @@ class MinVolumeRule(BaseRule):
         super().__init__("MinVolume")
         self.min_volume = min_volume  # 1 手 = 100 股
 
-    def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        if decision.action == "HOLD":
-            return RuleResult(passed=True, reason="HOLD 无需检查")
-
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
         if decision.volume < self.min_volume:
             return RuleResult(
                 passed=False,
@@ -168,10 +154,7 @@ class FrequencyRule(BaseRule):
         super().__init__("Frequency")
         self.max_per_minute = max_per_minute
 
-    def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        if decision.action == "HOLD":
-            return RuleResult(passed=True, reason="HOLD 无需检查")
-
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
         recent_trades = context.get("recent_trades_count", 0)
         if recent_trades >= self.max_per_minute:
             return RuleResult(
@@ -192,10 +175,7 @@ class DailyLossRule(BaseRule):
         super().__init__("DailyLoss")
         self.max_loss_pct = max_loss_pct  # 默认 -5%
 
-    def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        if decision.action == "HOLD":
-            return RuleResult(passed=True, reason="HOLD 无需检查")
-
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
         daily_pnl = context.get("daily_pnl", 0)
         total_capital = context.get("total_capital", 1_000_000)
 
@@ -215,10 +195,7 @@ class ConsecutiveLossRule(BaseRule):
         super().__init__("ConsecutiveLoss")
         self.max_consecutive = max_consecutive
 
-    def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        if decision.action == "HOLD":
-            return RuleResult(passed=True, reason="HOLD 无需检查")
-
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
         consecutive_losses = context.get("consecutive_losses", 0)
         if consecutive_losses >= self.max_consecutive:
             return RuleResult(
@@ -236,10 +213,7 @@ class ConfidenceRule(BaseRule):
         super().__init__("Confidence")
         self.min_confidence = min_confidence
 
-    def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        if decision.action == "HOLD":
-            return RuleResult(passed=True, reason="HOLD 无需检查")
-
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
         if decision.confidence < self.min_confidence:
             return RuleResult(
                 passed=False,
@@ -255,10 +229,7 @@ class DataAnomalyRule(BaseRule):
     def __init__(self):
         super().__init__("DataAnomaly")
 
-    def evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
-        if decision.action == "HOLD":
-            return RuleResult(passed=True, reason="HOLD 无需检查")
-
+    def _evaluate(self, decision: OrderDecision, context: dict) -> RuleResult:
         # 检查价格是否合理
         if decision.price <= 0:
             return RuleResult(passed=False, reason=f"价格异常: {decision.price}")

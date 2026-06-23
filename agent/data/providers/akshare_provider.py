@@ -149,20 +149,19 @@ class AKShareProvider:
     def _parse_minute_df(self, df: pd.DataFrame, security_id: str) -> list[KLine]:
         """解析分钟线 DataFrame"""
         klines = []
-        for _, row in df.iterrows():
+        for row in df.itertuples(index=False):
             try:
-                ts = pd.to_datetime(row["时间"])
                 klines.append(KLine(
                     security_id=security_id,
-                    timestamp=ts,
-                    open=float(row["开盘"]),
-                    high=float(row["最高"]),
-                    low=float(row["最低"]),
-                    close=float(row["收盘"]),
-                    volume=int(row["成交量"]),
-                    amount=float(row.get("成交额", 0)),
+                    timestamp=pd.to_datetime(row.时间),
+                    open=float(row.开盘),
+                    high=float(row.最高),
+                    low=float(row.最低),
+                    close=float(row.收盘),
+                    volume=int(row.成交量),
+                    amount=float(getattr(row, "成交额", 0)),
                 ))
-            except (KeyError, ValueError) as e:
+            except (AttributeError, ValueError) as e:
                 print(f"[AKShare] 解析分钟线行失败: {e}")
                 continue
         return klines
@@ -170,20 +169,20 @@ class AKShareProvider:
     def _parse_daily_df(self, df: pd.DataFrame, security_id: str) -> list[DailyKLine]:
         """解析日线 DataFrame"""
         klines = []
-        for _, row in df.iterrows():
+        for row in df.itertuples(index=False):
             try:
                 klines.append(DailyKLine(
                     security_id=security_id,
-                    date=str(row["日期"]),
-                    open=float(row["开盘"]),
-                    high=float(row["最高"]),
-                    low=float(row["最低"]),
-                    close=float(row["收盘"]),
-                    volume=int(row["成交量"]),
-                    amount=float(row.get("成交额", 0)),
-                    turnover_rate=float(row.get("换手率", 0)),
+                    date=str(row.日期),
+                    open=float(row.开盘),
+                    high=float(row.最高),
+                    low=float(row.最低),
+                    close=float(row.收盘),
+                    volume=int(row.成交量),
+                    amount=float(getattr(row, "成交额", 0)),
+                    turnover_rate=float(getattr(row, "换手率", 0)),
                 ))
-            except (KeyError, ValueError) as e:
+            except (AttributeError, ValueError) as e:
                 print(f"[AKShare] 解析日线行失败: {e}")
                 continue
         return klines

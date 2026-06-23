@@ -8,8 +8,11 @@
 5. 输出格式兼容 RTAuction OrderData/TradeData
 """
 
+import random
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+
+import numpy as np
 
 from ..data.models.market import KLine, TickEvent
 from .price_path import PricePathGenerator, PricePathConfig
@@ -135,7 +138,6 @@ class TickSynthesizer:
 
             # 随机生成撤单事件
             if self.config.cancel_ratio > 0 and len(events) > 2:
-                import random
                 if random.random() < self.config.cancel_ratio:
                     # 撤销一个之前的订单
                     cancel_idx = random.randint(0, len(events) - 2)
@@ -173,7 +175,6 @@ class TickSynthesizer:
             return [total_volume]
 
         # 生成随机权重
-        import numpy as np
         weights = np.random.exponential(1.0, n_points)
         weights = weights / weights.sum()
 

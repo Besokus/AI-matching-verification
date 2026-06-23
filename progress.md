@@ -19,19 +19,30 @@
   - `progress.md` (created)
 
 ### Phase T0: Tick 合成器
-- **Status:** in_progress
+- **Status:** complete
 - **Started:** 2026-06-22
+- **Completed:** 2026-06-22
 - Actions taken:
   - T0.1: 创建 AKShare 数据 Provider，支持分钟线和日线获取
   - T0.1: 实现 SQLite 本地缓存机制
   - T0.1: 创建市场数据模型（KLine, DailyKLine, TickEvent, MarketSnapshot）
   - T0.1: 编写单元测试
+  - T0.2: 实现布朗运动价格路径生成算法
+  - T0.2: 实现 OHLCV 约束（Open → High/Low → Close）
+  - T0.2: 创建 TickSynthesizer 主类
+  - T0.2: 实现订单/成交事件生成（ORDER_ADD, ORDER_CANCEL, TRADE）
+  - T0.2: 创建 SynthesisValidator 验证器
+  - T0.2: 编写单元测试
 - Files created/modified:
   - `agent/data/models/market.py` (created)
   - `agent/data/providers/akshare_provider.py` (created)
   - `agent/tests/test_data/test_akshare_provider.py` (created)
   - `agent/requirements.txt` (created)
   - `.gitignore` (modified)
+  - `agent/synthesizer/price_path.py` (created)
+  - `agent/synthesizer/tick_synthesizer.py` (created)
+  - `agent/synthesizer/validator.py` (created)
+  - `agent/tests/test_synthesizer/test_tick_synthesizer.py` (created)
 
 ### Phase T1: gRPC 通信层
 - **Status:** pending

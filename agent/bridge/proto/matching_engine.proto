@@ -1,0 +1,187 @@
+syntax = "proto3";
+
+package matching_engine;
+
+// 撮合引擎 gRPC 服务定义
+service MatchingEngineService {
+    // 历史事件回放
+    rpc FeedOrderEvent(OrderEvent) returns (EventResult);
+    rpc FeedTradeEvent(TradeEvent) returns (EventResult);
+
+    // Agent 订单操作
+    rpc SubmitAgentOrder(AgentOrder) returns (OrderResult);
+    rpc CancelAgentOrder(CancelRequest) returns (CancelResult);
+
+    // 市场状态查询
+    rpc GetMarketSnapshot(SnapshotRequest) returns (MarketSnapshotProto);
+    rpc GetAgentTrades(TradeQuery) returns (TradeList);
+
+    // 引擎控制
+    rpc WaitForDrain(DrainRequest) returns (DrainResult);
+    rpc GetEngineStatus(StatusRequest) returns (EngineStatus);
+}
+
+// 订单事件（历史回放用）
+message OrderEvent {
+    string security_id = 1;
+    int64 order_id = 2;
+    double price = 3;
+    int32 volume = 4;
+    OrderSide side = 5;
+    OrderType order_type = 6;
+    int64 timestamp_ns = 7;
+    OrderEventKind event_kind = 8;
+}
+
+// 成交事件（历史回放用）
+message TradeEvent {
+    string security_id = 1;
+    int64 trade_id = 2;
+    double price = 3;
+    int32 volume = 4;
+    int64 buy_order_id = 5;
+    int64 sell_order_id = 6;
+    int64 timestamp_ns = 7;
+}
+
+// Agent 订单
+message AgentOrder {
+    string security_id = 1;
+    double price = 2;
+    int32 volume = 3;
+    OrderSide side = 4;
+    OrderType order_type = 5;
+    string agent_id = 6;
+    string reason = 7;
+}
+
+// 撤单请求
+message CancelRequest {
+    string security_id = 1;
+    int64 order_id = 2;
+}
+
+// 市场快照请求
+message SnapshotRequest {
+    string security_id = 1;
+}
+
+// 交易查询
+message TradeQuery {
+    string security_id = 1;
+    string agent_id = 2;
+    int64 start_time_ns = 3;
+    int64 end_time_ns = 4;
+}
+
+// Drain 请求
+message DrainRequest {
+    string security_id = 1;
+    int64 timeout_ms = 2;
+}
+
+// 状态请求
+message StatusRequest {
+    bool detailed = 1;
+}
+
+// 事件结果
+message EventResult {
+    bool success = 1;
+    string error_message = 2;
+}
+
+// 订单结果
+message OrderResult {
+    bool success = 1;
+    int64 order_id = 2;
+    string error_message = 3;
+    OrderStatus status = 4;
+}
+
+// 撤单结果
+message CancelResult {
+    bool success = 1;
+    string error_message = 2;
+}
+
+// 市场快照
+message MarketSnapshotProto {
+    string security_id = 1;
+    repeated PriceLevel bids = 2;  // 10 档买盘
+    repeated PriceLevel asks = 3;  // 10 档卖盘
+    double last_price = 4;
+    int64 timestamp_ns = 5;
+    int64 total_volume = 6;
+    double total_amount = 7;
+}
+
+// 价格档位
+message PriceLevel {
+    double price = 1;
+    int32 volume = 2;
+}
+
+// 交易列表
+message TradeList {
+    repeated TradeRecord trades = 1;
+}
+
+// 交易记录
+message TradeRecord {
+    int64 trade_id = 1;
+    string security_id = 2;
+    double price = 3;
+    int32 volume = 4;
+    OrderSide side = 5;
+    int64 timestamp_ns = 6;
+    string agent_id = 7;
+    double commission = 8;
+}
+
+// Drain 结果
+message DrainResult {
+    bool success = 1;
+    int64 events_processed = 2;
+}
+
+// 引擎状态
+message EngineStatus {
+    EngineState state = 1;
+    int64 total_orders = 2;
+    int64 total_trades = 3;
+    int64 pending_orders = 4;
+    string uptime = 5;
+}
+
+// 枚举类型
+enum OrderSide {
+    ORDER_SIDE_BUY = 0;
+    ORDER_SIDE_SELL = 1;
+}
+
+enum OrderType {
+    ORDER_TYPE_LIMIT = 0;
+    ORDER_TYPE_MARKET = 1;
+}
+
+enum OrderEventKind {
+    ORDER_EVENT_ADD = 0;
+    ORDER_EVENT_CANCEL = 1;
+    ORDER_EVENT_MODIFY = 2;
+}
+
+enum OrderStatus {
+    ORDER_STATUS_NEW = 0;
+    ORDER_STATUS_PARTIAL = 1;
+    ORDER_STATUS_FILLED = 2;
+    ORDER_STATUS_CANCELLED = 3;
+    ORDER_STATUS_REJECTED = 4;
+}
+
+enum EngineState {
+    ENGINE_STATE_IDLE = 0;
+    ENGINE_STATE_RUNNING = 1;
+    ENGINE_STATE_PAUSED = 2;
+    ENGINE_STATE_STOPPED = 3;
+}
